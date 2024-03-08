@@ -1,0 +1,22 @@
+{
+    "name": "vlc-tv-scheduler",
+    "version": "1.0.0",
+    "description": "Use the VLC media player to create your own TV station. This app lets you configure what media should play and how often, and it controls VLC to automatically play the media back to back.",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^29.1.0"
+    },
+    "dependencies": {
+        "electron-store": "^8.1.0",
+        "ffprobe": "^1.1.2",
+        "ffprobe-static": "^3.1.0",
+        "mitt": "^3.0.1",
+        "vlc-client": "^1.1.1"
+    }
+}

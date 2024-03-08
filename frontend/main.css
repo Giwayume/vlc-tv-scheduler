@@ -1,0 +1,8 @@
+:root {
+    --bg-blue-lighten-1: #42A5F5;
+}
+
+.app-emphasized-open-expansion-panels .v-expansion-panel--active .v-expansion-panel-title {
+    background: var(--bg-blue-lighten-1);
+    color: white;
+}
