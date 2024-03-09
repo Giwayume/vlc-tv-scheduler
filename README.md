@@ -1,6 +1,6 @@
 # VLC TV Scheduler
 
-Use VLC to play your media non-stop, like running your own TV station! This application provides a simple user interface to select folders containing media you want to play, and mixes them together into a playlist that resembles a TV schedule.
+Use [VLC](https://www.videolan.org/vlc/) to play your media non-stop, like running your own TV station! This application provides a simple user interface to select folders containing media you want to play, and mixes them together into a playlist that resembles a TV schedule.
 
 It automatically controls video playback in VLC (which you should separately install on your system).
 
