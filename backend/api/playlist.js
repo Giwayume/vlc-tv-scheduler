@@ -254,8 +254,11 @@ async function queryNext(queryState) {
         if (playIndex >= tvSeriesFileList.length) playIndex = 0;
         queryState.playlistLastPlayedIndexByTvSeries.set(tvSeries.uuid, playIndex);
         const file = tvSeriesFileList[playIndex];
-        const fileInfo = await getFileInfo(file);
-        const duration = tvSeries.playTimeType === 'exactLength' ? tvSeries.playTime : fileInfo.duration;
+        let duration = 3600;
+        if (!queryState.ignoreMediaChecks) {
+            const fileInfo = await getFileInfo(file);
+            duration = tvSeries.playTimeType === 'exactLength' ? tvSeries.playTime : fileInfo.duration;
+        }
         media = {
             file,
             duration,
@@ -285,6 +288,23 @@ async function next() {
     return media;
 }
 
+/** Advances the playlist by the specified count and plays the media. (need to call build() before this) */
+async function jump(count) {
+    let media = null;
+    for (let i = 0; i < count; i++) {
+        const queryState = {
+            currentPlayingTvSeriesIndex,
+            playlistLastPlayedIndexByTvSeries,
+            playlistSubsequentPlayCountByTvSeries,
+            ignoreMediaChecks: i < count - 1,
+        }
+        media = await queryNext(queryState);
+        currentPlayingTvSeriesIndex = queryState.currentPlayingTvSeriesIndex;
+    }
+    emitter.emit('backend/api/vlc/playMedia', media);
+    return media;
+}
+
 /** Builds playlist then sends first media in playlist to VLC */
 async function autoplay() {
     await build();
@@ -297,6 +317,7 @@ emitter.on('backend/api/playlist/next', next);
 app.whenReady().then(() => {
     ipcMain.handle('backend/api/playlist/build', build);
     ipcMain.handle('backend/api/playlist/next', next);
+    ipcMain.handle('backend/api/playlist/jump', async (event, count) => jump(count));
     ipcMain.handle('backend/api/playlist/query', async (event, count) => query(count));
     ipcMain.handle('backend/api/playlist/scanAll', scanAll);
 });

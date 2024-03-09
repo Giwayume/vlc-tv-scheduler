@@ -6,9 +6,49 @@ const template = `
     <v-container>
         <template v-if="isBuildCompleted">
             <div class="d-flex">
-                <v-btn variant="outlined" color="primary" @click="buildPlaylist()">
+                <v-btn variant="outlined" color="primary" prepend-icon="mdi-refresh" class="mr-2" @click="buildPlaylist()">
                     {{ $t('playlist.rebuildPlaylistAction') }}
                 </v-btn>
+                <v-btn variant="outlined" color="primary" prepend-icon="mdi-skip-next" class="mr-2" @click="playNext()">
+                    {{ $t('playlist.playNextAction') }}
+                </v-btn>
+                <v-menu
+                    v-model="isJumpMenuShown"
+                    :close-on-content-click="false"
+                    location="end"
+                >
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" variant="outlined" color="primary" prepend-icon="mdi-skip-forward">
+                            {{ $t('playlist.playJumpAction') }}
+                        </v-btn>
+                    </template>
+                    <v-card>
+                        <v-text-field
+                            type="number"
+                            step="1"
+                            min="1"
+                            v-model.number="jumpCount"
+                            hide-details="auto"
+                            :label="$t('playlist.jumpCountLabel')"
+                        />
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn
+                                variant="text"
+                                @click="isJumpMenuShown = false"
+                            >
+                                {{ $t('playlist.playJumpCancel') }}
+                            </v-btn>
+                            <v-btn
+                                color="primary"
+                                variant="text"
+                                @click="jumpForward()"
+                            >
+                            {{ $t('playlist.playJumpConfirm') }}
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-menu>
             </div>
             <v-divider class="my-4" />
             <v-card :elevation="4">
@@ -68,6 +108,9 @@ const PlaylistComponent = {
         const tableItemsPerPage = ref(5);
         const totalTableItems = ref(1000);
         const tableLoading = ref(false);
+
+        const isJumpMenuShown = ref(false);
+        const jumpCount = ref(1);
 
         const tableHeaders = [
             {
@@ -134,7 +177,6 @@ const PlaylistComponent = {
 
         async function generateTableItemsFromPlaylist() {
             const remainingPlayTime = await playlistStore.queryRemainingPlayTime();
-            console.log(remainingPlayTime);
             let startTimestamp = new Date().getTime() + (remainingPlayTime * 1000);
             tableItems.value = playlistItems.map(item => {
                 const newItem = {
@@ -152,14 +194,36 @@ const PlaylistComponent = {
             showLoading.value = true;
             try {
                 await backend.playlist.build();
+                tablePage.value = 1;
+                playlistCount.value = tableItemsPerPage.value;
+                tableItems.value = [];
+                await loadTableItems({
+                    page: tablePage.value,
+                    itemsPerPage: tableItemsPerPage.value,
+                });
             } catch (error) {}
             showLoading.value = false;
+        }
+
+        async function playNext() {
+            await backend.playlist.next();
+        }
+
+        async function jumpForward() {
+            loadingText.value = t('app.loading');
+            showLoading.value = true;
+            try {
+                await backend.playlist.jump(parseInt(jumpCount.value));
+            } catch (error) {}
+            showLoading.value = false;
+            isJumpMenuShown.value = false;
         }
 
         return {
             isBuildCompleted, showLoading, loadingText,
             tablePage, tableHeaders, tablePageItems, tableItemsPerPage, totalTableItems, tableLoading,
-            loadTableItems, buildPlaylist,
+            isJumpMenuShown, jumpCount,
+            loadTableItems, buildPlaylist, playNext, jumpForward,
         };
     }
 };

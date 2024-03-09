@@ -57,7 +57,6 @@ npm run start
 
 ## TODO Feature List
 
-- Jump to position in playlist
 - Advertisement folders
 - Analyze video for ad break spots
 - Time boxing to intervals (e.g. 30 minutes), where ads fill in the remaining time
@@ -67,4 +66,3 @@ npm run start
 - Change folder configured after selection / manual entry of folder
 - Support for images
 - Support for livestreams
-- App icon

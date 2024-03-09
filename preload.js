@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('backend', {
         onNextMediaStarted: (callback) => ipcRenderer.on('callbacks/playlist/nextMediaStarted', (_event, value) => callback(value)),
         build: () => ipcRenderer.invoke('backend/api/playlist/build'),
         query: (count) => ipcRenderer.invoke('backend/api/playlist/query', count),
+        jump: (count) => ipcRenderer.invoke('backend/api/playlist/jump', count),
         next: () => ipcRenderer.invoke('backend/api/playlist/next'),
         scanAll: () => ipcRenderer.invoke('backend/api/playlist/scanAll'),
     },

@@ -47,6 +47,11 @@ const en = {
         buildRequired: 'The playlist needs to be built.',
         buildPlaylistAction: 'Build Playlist',
         rebuildPlaylistAction: 'Rebuild Playlist',
+        playNextAction: 'Play Next',
+        playJumpAction: 'Jump',
+        playJumpCancel: 'Cancel',
+        playJumpConfirm: 'Go',
+        jumpCountLabel: 'Jump Forward Count',
         tableHeader: {
             filename: 'Filename',
             startTime: 'Start Time',
