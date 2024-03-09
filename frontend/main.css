@@ -6,3 +6,7 @@
     background: var(--bg-blue-lighten-1);
     color: white;
 }
+
+.v-table > .v-table__wrapper > table > thead > tr > th {
+    font-weight: bold;
+}

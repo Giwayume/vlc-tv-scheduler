@@ -3,7 +3,7 @@ const path = require('node:path')
 require('./backend/main');
 
 const createWindow = () => {
-    const win = new BrowserWindow({
+    global.mainWindow = new BrowserWindow({
         width: 1280,
         height: 720,
         webPreferences: {
@@ -11,7 +11,7 @@ const createWindow = () => {
         },
     });
 
-    win.loadFile('index.html');
+    global.mainWindow.loadFile('index.html');
 }
 
 app.whenReady().then(() => {

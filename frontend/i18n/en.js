@@ -1,6 +1,13 @@
 const en = {
     app: {
         title: 'VLC TV Scheduler',
+        loading: 'Loading...',
+    },
+    vlc: {
+        loading: {
+            buildPlaylist: 'Building Playlist...',
+            exit: 'Exiting VLC...',
+        },
     },
     media: {
         title: 'Media',
@@ -22,6 +29,25 @@ const en = {
             remove: 'Remove Configuration',
         },
         addNewFolder: 'Select a folder containing 1 TV series...',
-    }
+    },
+    playlist: {
+        title: 'Playlist',
+        buildRequired: 'The playlist needs to be built.',
+        buildPlaylistAction: 'Build Playlist',
+        rebuildPlaylistAction: 'Rebuild Playlist',
+        tableHeader: {
+            filename: 'Filename',
+            startTime: 'Start Time',
+        },
+    },
+    settings: {
+        title: 'Settings',
+        vlcHeading: 'VLC',
+        vlcExePath: 'VLC Executable Path',
+        vlcRemoteHost: 'Remote Host',
+        vlcRemotePort: 'Remote Port',
+        vlcRemotePassword: 'Remote Password',
+        vlcRemoteExtraintf: 'Remote Extraintf',
+    },
 };
 export default en;

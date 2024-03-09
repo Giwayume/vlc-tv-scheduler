@@ -13,7 +13,17 @@ const routes = [
                 path: 'media',
                 name: 'media',
                 component: () => import('../components/media.js'),
-            }
+            },
+            {
+                path: 'playlist',
+                name: 'playlist',
+                component: () => import('../components/playlist.js'),
+            },
+            {
+                path: 'settings',
+                name: 'settings',
+                component: () => import('../components/settings.js'),
+            },
         ],
     },
 ];

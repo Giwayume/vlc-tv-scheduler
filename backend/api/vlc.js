@@ -1,34 +1,43 @@
+const { app, ipcMain } = require('electron/main');
 const { spawn } = require('node:child_process');
-const os = require('os');
 const VLC = require("vlc-client");
 const { emitter } = require('./emitter');
-const { getVlcConfig } = require('./store');
-
-const defaultVlcPath = ({
-    'Linux': '/usr/bin/vlc',
-    'Darwin': '/Applications/VLC.app/Contents/MacOS/VLC',
-    'Windows_NT': 'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe',
-})[os.type()] ?? null;
+const { setRemainingPlayTime, getVlcConfig, getVlcPath } = require('./store');
 
 let currentPlayingMedia = null;
 let currentPlayingMediaStartTimestamp = 0;
 let currentPlayingMediaExpireTimeoutHandle = null;
+let checkVideoEndIntervalHandle = null;
 let vlcProcess = null;
 let vlcClient = null;
 
 async function createVlcProcess() {
     const vlcConfig = getVlcConfig();
+    const vlcPath = getVlcPath();
+    if (vlcPath == null) return;
     if (!vlcProcess) {
-        vlcProcess = spawn(defaultVlcPath, [
-            '--extraintf', vlcConfig.extraintf,
-            '--http-host', vlcConfig.host,
-            '--http-port', vlcConfig.port,
-            '--http-password', vlcConfig.password,
-            '--image-duration', '-1'
-        ]);
-        vlcProcess.on('close', () => {
+        try {
+            vlcProcess = spawn(vlcPath, [
+                '--extraintf', vlcConfig.extraintf,
+                '--http-host', vlcConfig.host,
+                '--http-port', vlcConfig.port,
+                '--http-password', vlcConfig.password,
+                '--image-duration', '-1'
+            ]);
+            if (!vlcProcess) return;
+            checkVideoEndIntervalHandle = setInterval(checkVideoEnd, 2000);
+            vlcProcess.on('error', (err) => {
+                console.log("\n\t\tERROR: spawn failed! (" + err + ")");
+                vlcProcess = null;
+            });
+            vlcProcess.on('close', () => {
+                clearInterval(checkVideoEndIntervalHandle);
+                vlcProcess = null;
+            });
+        } catch (error) {
             vlcProcess = null;
-        });
+            return;
+        }
         await new Promise((resolve) => {
             setTimeout(resolve, 1000);
         });
@@ -49,32 +58,77 @@ async function playMedia(media) {
         }
         return;
     }
-    currentPlayingMediaStartTimestamp = new Date().getTime();
-    clearTimeout(currentPlayingMediaExpireTimeoutHandle);
-    currentPlayingMediaExpireTimeoutHandle = setTimeout(() => {
-        emitter.emit('backend/api/playlist/next');
-    }, media.duration * 1000);
-    await createVlcProcess();
-    currentPlayingMedia = media;
-    await vlcClient.playFile(media.file, { wait: true });
-    if (media.playTimeType === 'videoLength') {
-        console.log('Expected length: ', media.duration);
-        console.log('Actual length: ', await vlcClient.getLength());
-        const actualVideoLength = parseInt(await vlcClient.getLength() - await vlcClient.getTime());
-        console.log(actualVideoLength);
-        clearTimeout(currentPlayingMediaExpireTimeoutHandle);
-        currentPlayingMediaExpireTimeoutHandle = setTimeout(() => {
-            emitter.emit('backend/api/playlist/next');
-        }, actualVideoLength * 1000);
+
+    try {
+        currentPlayingMediaStartTimestamp = new Date().getTime();
+        queueNextPlaylistItem(media.duration);
+
+        currentPlayingMedia = null;
+
+        await createVlcProcess();
+        await vlcClient.playFile(media.file, { wait: true });
+        currentPlayingMedia = media;
+
+        if (media.playTimeType === 'videoLength') {
+            const actualVideoLength = parseInt(await vlcClient.getLength() - await vlcClient.getTime());
+            queueNextPlaylistItem(actualVideoLength);
+        }
+
+        const [playLength, playTime] = await Promise.all([
+            await vlcClient.getLength(),
+            await vlcClient.getTime(),
+        ]);
+        setRemainingPlayTime(playLength - playTime);
+        global.mainWindow.webContents.send('callbacks/playlist/nextMediaStarted');
+    } catch (error) {
+        global.mainWindow.webContents.send('callbacks/playlist/nextMediaStartFailed');
     }
 }
 
-async function getPlaybackTime() {
-    if (vlcClient) {
-        return await vlcClient.getTime();
+async function exit() {
+    clearInterval(checkVideoEndIntervalHandle);
+    clearTimeout(currentPlayingMediaExpireTimeoutHandle);
+    if (vlcProcess) {
+        vlcProcess.kill();
+        vlcProcess = null;
     }
-    return 0;
+    if (vlcClient) {
+        vlcClient = null;
+    }
+    setRemainingPlayTime(0);
+}
+
+/** Poll VLC to check if the video has ended sooner than expected, and advance the playlist. */
+async function checkVideoEnd() {
+    if (vlcProcess == null) {
+        clearInterval(checkVideoEndIntervalHandle);
+        setRemainingPlayTime(0);
+        return;
+    }
+    if (currentPlayingMedia != null) {
+        const [isStopped, playLength, playTime] = await Promise.all([
+            await vlcClient.isStopped(),
+            await vlcClient.getLength(),
+            await vlcClient.getTime(),
+        ]);
+        setRemainingPlayTime(playLength - playTime);
+        if (isStopped || playTime >= playLength - 1) {
+            clearTimeout(currentPlayingMediaExpireTimeoutHandle);
+            emitter.emit('backend/api/playlist/next');
+        }
+    }
+}
+
+/** Queue the playlist to advance at the expected duration */
+function queueNextPlaylistItem(durationInSeconds) {
+    clearTimeout(currentPlayingMediaExpireTimeoutHandle);
+    currentPlayingMediaExpireTimeoutHandle = setTimeout(() => {
+        emitter.emit('backend/api/playlist/next');
+    }, durationInSeconds * 1000);
 }
 
 emitter.on('backend/api/vlc/playMedia', playMedia);
 
+app.whenReady().then(() => {
+    ipcMain.handle('backend/api/vlc/exit', exit);
+});

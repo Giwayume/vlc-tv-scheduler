@@ -4,7 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const ffprobe = require('ffprobe');
 const ffprobeStatic = require('ffprobe-static');
-const { getTvSeriesList } = require('./store');
+const { getRemainingPlayTime, getTvSeriesList } = require('./store');
 const { cronMatchesTimestamp } = require('./cronjob');
 const { emitter } = require('./emitter');
 
@@ -177,12 +177,13 @@ async function build() {
         playlistSubsequentPlayCountByTvSeries.set(tvSeries.uuid, 0);
     }
     currentPlayingTvSeriesIndex = 0;
+    global.mainWindow.webContents.send('callbacks/playlist/buildCompleted');
 }
 
 /** Query for a list of media that shall play in the future, and for how long. (need to call build() before this) */
 async function query(episodeCount) {
     let totalLoopCount = 0;
-    let timestampIterator = new Date().getTime();
+    let timestampIterator = new Date().getTime() + (getRemainingPlayTime() * 1000);
     let mediaList = [];
     const tvSeriesList = getTvSeriesList();
     let currentPlayingTvSeriesIterator = currentPlayingTvSeriesIndex;
