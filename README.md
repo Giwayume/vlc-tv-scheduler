@@ -16,7 +16,7 @@ VLC TV Scheduler works with directories rather than individual media files. You 
 
 - **Ordering.** A folder can play in alphabetical order, for series that have a linear plot, or be randomized (every episode will play before repeating).
 
-- **Equal intermixing.** No matter how big or small the directories with media content are, VLC TV Scheduler will ensure that their media files appear equally often in the playlist. For example, if you have two directories — one with several files (`A1, A2, A3, A4`) and one with just a single file (`B1`) — the resulting playlist would be: `A1, B1, A2, B1, A3, B1, A4, B1`. You can can make a series play multiple episodes back-to-back by changing the "Play Episode Count".
+- **Equal intermixing.** No matter how big or small the directories with media content are, VLC TV Scheduler will ensure that their media files appear equally often in the playlist. For example, if you have two directories — one with several files (`A1, A2, A3, A4`) and one with just a single file (`B1`) — the resulting playlist would be: `A1, B1, A2, B1, A3, B1, A4, B1`. You can make a series play multiple episodes back-to-back by changing the "Play Episode Count".
 
 - **Fixed playtime.** You can configure videos in a directory to only play for 10 seconds, as an example, before moving on.
 

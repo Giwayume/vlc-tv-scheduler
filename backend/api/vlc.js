@@ -69,15 +69,16 @@ async function playMedia(media) {
         await vlcClient.playFile(media.file, { wait: true });
         currentPlayingMedia = media;
 
-        if (media.playTimeType === 'videoLength') {
-            const actualVideoLength = parseInt(await vlcClient.getLength() - await vlcClient.getTime());
-            queueNextPlaylistItem(actualVideoLength);
-        }
-
         const [playLength, playTime] = await Promise.all([
             await vlcClient.getLength(),
             await vlcClient.getTime(),
         ]);
+
+        if (media.playTimeType === 'videoLength') {
+            const actualVideoLength = playLength - playTime;
+            queueNextPlaylistItem(actualVideoLength);
+        }
+
         setRemainingPlayTime(playLength - playTime);
         global.mainWindow.webContents.send('callbacks/playlist/nextMediaStarted');
     } catch (error) {
@@ -101,6 +102,7 @@ async function exit() {
 /** Poll VLC to check if the video has ended sooner than expected, and advance the playlist. */
 async function checkVideoEnd() {
     if (vlcProcess == null) {
+        clearTimeout(currentPlayingMediaExpireTimeoutHandle);
         clearInterval(checkVideoEndIntervalHandle);
         setRemainingPlayTime(0);
         return;

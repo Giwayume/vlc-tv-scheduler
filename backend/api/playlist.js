@@ -11,6 +11,8 @@ const { emitter } = require('./emitter');
 const MAX_SCAN_DEPTH = 64;
 const MAX_QUERY_LOOP_COUNT = 65536;
 
+const extensionCheckRegex = /^(3gp|asf|wmv|au|avi|flv|mov|mp4|ogm|ogg|mkv|mka|ts|mpg|mp3|mp2|nsc|nsv|nut|ra|ram|rm|rv|rmbv|a52|dts|aac|flac|dv|vid|tta|tac|ty|wav|dts|xa)$/;
+
 const fileListByTvSeries = new Map();
 const fileInfoMap = new Map();
 const playlistByTvSeries = new Map();
@@ -41,6 +43,12 @@ function shuffle(array) {
     }
 
     return array;
+}
+
+/** Check if file extension is supported */
+function isSupportedFileExtension(filename) {
+    const extension = filename.split('.').pop();
+    return extensionCheckRegex.test(extension);
 }
 
 /** ffprobe promise wrapper */
@@ -85,6 +93,10 @@ function getFfprobeInfoDuration(ffprobeInfo) {
     return duration;
 }
 
+function isFfprobeMediaDetected(ffprobeInfo) {
+    return ffprobeInfo.streams.filter(stream => stream.codec_type === 'video' || stream.codec_type === 'audio').length > 0;
+}
+
 /** Recursively scan for media files in the sepecified folder. */
 async function scanForMediaFilesInDirectory(parentDirectory, scanUuid, depth = 0) {
     if (depth >= MAX_SCAN_DEPTH) return [];
@@ -98,13 +110,12 @@ async function scanForMediaFilesInDirectory(parentDirectory, scanUuid, depth = 0
                 const stat = await fsPromises.lstat(filePath);
                 if (currentScanUuid !== scanUuid) return [];
                 if (stat.isFile()) {
-                    const ffprobeInfo = await ffprobeAsync(filePath);
-                    if (currentScanUuid !== scanUuid) return [];
-                    fileInfoMap.set(filePath, {
-                        size: stat.size,
-                        duration: parseInt(getFfprobeInfoDuration(ffprobeInfo)),
-                    });
-                    fileList.push(filePath);
+                    if (isSupportedFileExtension(file)) {
+                        fileInfoMap.set(filePath, {
+                            size: stat.size,
+                        });
+                        fileList.push(filePath);
+                    }
                 } else {
                     fileList = fileList.concat(
                         await scanForMediaFilesInDirectory(filePath, scanUuid, depth + 1)
@@ -134,6 +145,7 @@ async function scanTvSeries(tvSeriesUuid, scanUuid = null) {
     const tvSeries = tvSeriesList.filter(series => series.uuid === tvSeriesUuid)[0];
     if (!tvSeries) return;
     const fileList = await scanForMediaFilesInDirectory(tvSeries.folder, scanUuid);
+
     if (currentScanUuid !== scanUuid) return;
     fileListByTvSeries.set(tvSeries.uuid, fileList);
     if (isInitiatedScan && currentScanUuid === scanUuid) {
@@ -147,18 +159,25 @@ async function scanAll() {
     const scanUuid = uuid();
     currentScanUuid = scanUuid;
     const tvSeriesList = getTvSeriesList();
-    for (const tvSeries of tvSeriesList) {
-        try {
-            await scanTvSeries(tvSeries.uuid, scanUuid);
-        } catch (error) {
-            console.error('[api/playlist/scanAll] Error scanning series: ', tvSeries.folder);
-        }
-    }
+    await Promise.all(tvSeriesList.map((tvSeries) => {
+        return scanTvSeries(tvSeries.uuid, scanUuid).catch(() => {});
+    }));
     if (currentScanUuid === scanUuid) {
         didScanComplete = true;
         currentScanUuid = null;
     }
     return didScanComplete;
+}
+
+/** Research basic information needed about a file, such as how long it will play for. */
+async function getFileInfo(filePath) {
+    let fileInfo = fileInfoMap.get(filePath) ?? {};
+    if (!fileInfo.duration) {
+        const ffprobeInfo = await ffprobeAsync(filePath);
+        fileInfo.duration = parseInt(getFfprobeInfoDuration(ffprobeInfo));
+        fileInfoMap.set(filePath, fileInfo);
+    }
+    return fileInfo;
 }
 
 /** Scans all files and prepares the ordered list of episodes to play. */
@@ -182,83 +201,79 @@ async function build() {
 
 /** Query for a list of media that shall play in the future, and for how long. (need to call build() before this) */
 async function query(episodeCount) {
-    let totalLoopCount = 0;
-    let timestampIterator = new Date().getTime() + (getRemainingPlayTime() * 1000);
     let mediaList = [];
+
     const tvSeriesList = getTvSeriesList();
-    let currentPlayingTvSeriesIterator = currentPlayingTvSeriesIndex;
     const playlistLastPlayedIteratorByTvSeries = new Map();
     const playlistSubsequentPlayIteratorByTvSeries = new Map();
     for (const tvSeries of tvSeriesList) {
         playlistLastPlayedIteratorByTvSeries.set(tvSeries.uuid, playlistLastPlayedIndexByTvSeries.get(tvSeries.uuid) ?? -1);
         playlistSubsequentPlayIteratorByTvSeries.set(tvSeries.uuid, playlistSubsequentPlayCountByTvSeries.get(tvSeries.uuid) ?? 0);
     }
-    let episodeIndex = 0;
-    while (episodeIndex < episodeCount) {
-        totalLoopCount++
-        if (totalLoopCount >= MAX_QUERY_LOOP_COUNT) break;
-        if (currentPlayingTvSeriesIterator < 0 || currentPlayingTvSeriesIterator >= tvSeriesList.length) currentPlayingTvSeriesIterator = 0;
-        const tvSeries = tvSeriesList[currentPlayingTvSeriesIterator];
-        const tvSeriesFileList = playlistByTvSeries.get(tvSeries.uuid) ?? [];
-        if (tvSeriesFileList.length === 0 || !cronMatchesTimestamp(tvSeries.cron, timestampIterator)) {
-            currentPlayingTvSeriesIterator++;
-            continue;
-        }
-        let playIndex = playlistLastPlayedIteratorByTvSeries.get(tvSeries.uuid) + 1;
-        if (playIndex >= tvSeriesFileList.length) playIndex = 0;
-        playlistLastPlayedIteratorByTvSeries.set(tvSeries.uuid, playIndex);
-        const file = tvSeriesFileList[playIndex];
-        const fileInfo = fileInfoMap.get(file) ?? { duration: 0 };
-        const duration = tvSeries.playTimeType === 'exactLength' ? tvSeries.playTime : fileInfo.duration;
-        mediaList.push({
-            file,
-            duration,
-        });
-        timestampIterator += duration;
-        let subsequentCount = (playlistSubsequentPlayIteratorByTvSeries.get(tvSeries.uuid) ?? 0) + 1;
-        if (subsequentCount >= tvSeries.playCount) {
-            subsequentCount = 0;
-            currentPlayingTvSeriesIterator += 1;
-        }
-        playlistSubsequentPlayIteratorByTvSeries.set(tvSeries.uuid, subsequentCount);
-        episodeIndex++;
+
+    const queryState = {
+        currentPlayingTvSeriesIndex,
+        playlistLastPlayedIndexByTvSeries: playlistLastPlayedIteratorByTvSeries,
+        playlistSubsequentPlayCountByTvSeries: playlistSubsequentPlayIteratorByTvSeries,
     }
+
+    for (let episodeIndex = 0; episodeIndex < episodeCount; episodeIndex++) {
+        mediaList.push(
+            await queryNext(queryState)
+        );
+    }
+
     return mediaList;
 }
 
-/** Advances the playlist and returns the next media to play. (need to call build() before this) */
-async function next() {
+/** Queries for the next media in the playlist based on the provided query state. (need to call build() before this) */
+async function queryNext(queryState) {
     let media = null;
     const timestamp = new Date().getTime();
     let totalLoopCount = 0;
     const tvSeriesList = getTvSeriesList();
     while (totalLoopCount <= MAX_QUERY_LOOP_COUNT) {
         totalLoopCount++;
-        if (currentPlayingTvSeriesIndex < 0 || currentPlayingTvSeriesIndex >= tvSeriesList.length) currentPlayingTvSeriesIndex = 0;
-        const tvSeries = tvSeriesList[currentPlayingTvSeriesIndex];
+        if (
+            queryState.currentPlayingTvSeriesIndex < 0 || queryState.currentPlayingTvSeriesIndex >= tvSeriesList.length
+        ) queryState.currentPlayingTvSeriesIndex = 0;
+        const tvSeries = tvSeriesList[queryState.currentPlayingTvSeriesIndex];
         const tvSeriesFileList = playlistByTvSeries.get(tvSeries.uuid) ?? [];
         if (tvSeriesFileList.length === 0 || !cronMatchesTimestamp(tvSeries.cron, timestamp)) {
-            currentPlayingTvSeriesIndex++;
+            queryState.currentPlayingTvSeriesIndex++;
             continue;
         }
-        let playIndex = playlistLastPlayedIndexByTvSeries.get(tvSeries.uuid) + 1;
+        let playIndex = queryState.playlistLastPlayedIndexByTvSeries.get(tvSeries.uuid) + 1;
         if (playIndex >= tvSeriesFileList.length) playIndex = 0;
-        playlistLastPlayedIndexByTvSeries.set(tvSeries.uuid, playIndex);
+        queryState.playlistLastPlayedIndexByTvSeries.set(tvSeries.uuid, playIndex);
         const file = tvSeriesFileList[playIndex];
-        const fileInfo = fileInfoMap.get(file) ?? { duration: 0 };
+        const fileInfo = await getFileInfo(file);
         const duration = tvSeries.playTimeType === 'exactLength' ? tvSeries.playTime : fileInfo.duration;
         media = {
             file,
             duration,
             playTimeType: tvSeries.playTimeType,
         };
-        let subsequentCount = (playlistSubsequentPlayCountByTvSeries.get(tvSeries.uuid) ?? 0) + 1;
+        let subsequentCount = (queryState.playlistSubsequentPlayCountByTvSeries.get(tvSeries.uuid) ?? 0) + 1;
         if (subsequentCount >= tvSeries.playCount) {
             subsequentCount = 0;
-            currentPlayingTvSeriesIndex += 1;
+            queryState.currentPlayingTvSeriesIndex += 1;
         }
-        playlistSubsequentPlayCountByTvSeries.set(tvSeries.uuid, subsequentCount);
+        queryState.playlistSubsequentPlayCountByTvSeries.set(tvSeries.uuid, subsequentCount);
+        break;
     }
+    return media;
+}
+
+/** Advances the playlist and returns the next media to play. (need to call build() before this) */
+async function next() {
+    const queryState = {
+        currentPlayingTvSeriesIndex,
+        playlistLastPlayedIndexByTvSeries,
+        playlistSubsequentPlayCountByTvSeries,
+    }
+    const media = await queryNext(queryState);
+    currentPlayingTvSeriesIndex = queryState.currentPlayingTvSeriesIndex;
     emitter.emit('backend/api/vlc/playMedia', media);
     return media;
 }
