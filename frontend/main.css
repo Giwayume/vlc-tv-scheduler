@@ -7,6 +7,11 @@
     color: white;
 }
 
-.v-table > .v-table__wrapper > table > thead > tr > th {
+.app-playlist-table .v-table__wrapper > table > thead > tr > th {
     font-weight: bold;
+}
+
+.app-playlist-table .v-table__wrapper > table > tbody > tr > td:first-child {
+    white-space: break-spaces;
+    word-break: break-all;
 }

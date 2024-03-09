@@ -4,6 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const ffprobe = require('ffprobe');
 const ffprobeStatic = require('ffprobe-static');
+const naturalCompare = require("natural-compare-lite");
 const { getRemainingPlayTime, getTvSeriesList } = require('./store');
 const { cronMatchesTimestamp } = require('./cronjob');
 const { emitter } = require('./emitter');
@@ -188,11 +189,17 @@ async function build() {
     for (const tvSeries of tvSeriesList) {
         const fileList = fileListByTvSeries.get(tvSeries.uuid) ?? [];
         if (tvSeries.playOrder === 'alphabetical') {
-            playlistByTvSeries.set(tvSeries.uuid, fileList.sort());
+            playlistByTvSeries.set(tvSeries.uuid, fileList.sort((a, b) => {
+                return naturalCompare(a.toLowerCase(), b.toLowerCase());
+            }));
         } else if (tvSeries.playOrder === 'random') {
             playlistByTvSeries.set(tvSeries.uuid, shuffle(fileList));
         }
-        playlistLastPlayedIndexByTvSeries.set(tvSeries.uuid, -1);
+        let playlistIndex = -1 + tvSeries.playlistOffset;
+        if (playlistIndex >= fileList.length) playlistIndex = -1;
+        if (playlistIndex < -1) playlistIndex += fileList.length;
+        if (playlistIndex < -1) playlistIndex = -1;
+        playlistLastPlayedIndexByTvSeries.set(tvSeries.uuid, playlistIndex);
         playlistSubsequentPlayCountByTvSeries.set(tvSeries.uuid, 0);
     }
     currentPlayingTvSeriesIndex = 0;

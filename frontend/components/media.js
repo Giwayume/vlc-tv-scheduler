@@ -33,7 +33,7 @@ const template = `
                                     min="1"
                                     v-model.number="media.playCount"
                                     hide-details="auto"
-                                    :label="$t('media.playCount')"
+                                    :label="$t('media.playCountLabel')"
                                     @update:modelValue="queueTvListUpdate()"
                                 />
                             </v-col>
@@ -43,8 +43,21 @@ const template = `
                             >
                                 <v-select
                                     v-model="media.playOrder"
-                                    :label="$t('media.playOrder')"
+                                    :label="$t('media.playOrderLabel')"
                                     :items="playOrderOptions"
+                                    @update:modelValue="queueTvListUpdate()"
+                                />
+                            </v-col>
+                            <v-col
+                                cols="12"
+                                sm="4"
+                            >
+                                <v-text-field
+                                    type="number"
+                                    step="1"
+                                    v-model.number="media.playlistOffset"
+                                    hide-details="auto"
+                                    :label="$t('media.playlistOffsetLabel')"
                                     @update:modelValue="queueTvListUpdate()"
                                 />
                             </v-col>
@@ -94,6 +107,9 @@ const template = `
                         <v-divider />
 
                         <h3 class="text-h6 mb-2 mt-4" v-t="'media.actionsHeading'" />
+                        <v-btn color="primary" variant="outlined" prepend-icon="mdi-folder" class="mr-2" @click="openTvSeriesFolder(media)">
+                            {{ $t('media.openFolder') }}
+                        </v-btn>
                         <v-btn color="error" variant="outlined" prepend-icon="mdi-delete" @click="removeTvSeries(media)">
                             {{ $t('media.removeFolder') }}
                         </v-btn>
@@ -129,10 +145,12 @@ const template = `
 `;
 
 const { ref, watch } = Vue;
+const { useI18n } = VueI18n;
 
 const MediaComponent = {
     template,
     setup() {
+        const { t } = useI18n();
         const configurationStore = useConfigurationStore();
         const playlistStore = usePlaylistStore();
 
@@ -146,13 +164,13 @@ const MediaComponent = {
         }, { immediate: true });
 
         const playOrderOptions = [
-            { value: 'alphabetical', title: 'Alphabetical' },
-            { value: 'random', title: 'Random' },
+            { value: 'alphabetical', title: t('media.playOrderOptions.alphabetical') },
+            { value: 'random', title: t('media.playOrderOptions.random') },
         ];
 
         const playTimeTypeOptions = [
-            { value: 'videoLength', title: 'Video Length' },
-            { value: 'exactLength', title: 'Exact Specified Length' },
+            { value: 'videoLength', title: t('media.playTimeTypeOptions.videoLength') },
+            { value: 'exactLength', title: t('media.playTimeTypeOptions.exactLength') },
         ];
 
         function queueTvListUpdate() {
@@ -172,6 +190,7 @@ const MediaComponent = {
                     title: '',
                     playCount: 1,
                     playOrder: 'alphabetical',
+                    playlistOffset: 0,
                     playTimeType: 'videoLength',
                     playTime: 0,
                     cron: '* * * * *',
@@ -179,6 +198,10 @@ const MediaComponent = {
             }
             playlistStore.setIsBuildCompleted(false);
             configurationStore.setTvSeriesList(tvSeriesList.value);
+        }
+
+        async function openTvSeriesFolder(series) {
+            backend.filesystem.openPath(series.folder);
         }
 
         async function removeTvSeries(series) {
@@ -195,7 +218,7 @@ const MediaComponent = {
 
         return {
             tvSeriesList, playOrderOptions, playTimeTypeOptions, showDeleteConfirm,
-            queueTvListUpdate, addTvSeries, removeTvSeries, removeTvSeriesConfirm,
+            queueTvListUpdate, addTvSeries, openTvSeriesFolder, removeTvSeries, removeTvSeriesConfirm,
         };
     }
 };

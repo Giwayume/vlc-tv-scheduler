@@ -14,13 +14,23 @@ const en = {
         instructions: '<p>Select <strong>one or more folders</strong> containing the media you wish to play.</p><p>This application is designed so that <strong>each TV series should be in its own folder</strong>, and you should select each of those folders individually.</p>',
         mixingHeading: 'Mixing',
         tvHeading: 'TV Series List',
-        playCount: 'Play Episode Count',
-        playOrder: 'Play Order',
+        playCountLabel: 'Play Episode Count',
+        playOrderLabel: 'Play Order',
+        playOrderOptions: {
+            alphabetical: 'Alphabetical',
+            random: 'Random',
+        },
+        playlistOffsetLabel: 'Playlist Start Offset',
         scheduleHeading: 'Schedule',
         cronLabel: 'Media in this folder can play in this timeframe:',
         playTimeTypeLabel: 'Play Length',
+        playTimeTypeOptions: {
+            videoLength: 'Video Length',
+            exactLength: 'Exact Specified Length',
+        },
         playTimeLabel: 'Specify Length in Seconds:',
         actionsHeading: 'Actions',
+        openFolder: 'Open Folder',
         removeFolder: 'Remove',
         removeFolderConfirm: {
             title: 'Are you sure?',
@@ -48,6 +58,8 @@ const en = {
         vlcRemotePort: 'Remote Port',
         vlcRemotePassword: 'Remote Password',
         vlcRemoteExtraintf: 'Remote Extraintf',
+        configHeading: 'Configuration Management',
+        openConfigFolder: 'Open Configuration Directory',
     },
 };
 export default en;

@@ -1,3 +1,4 @@
+const { shell } = require('electron');
 const { app, ipcMain, BrowserWindow } = require('electron/main');
 const { dialog } = require('electron');
 
@@ -20,10 +21,21 @@ function pickDirectories() {
     });
 }
 
+function openPath(folderPath) {
+    shell.openPath(folderPath);
+}
+
+function openUserDataFolder() {
+    const folder = app.getPath('userData');
+    openPath(folder);
+}
+
 ipcMain.on('frontend/preload', (event) => {
     mainWindow = BrowserWindow.fromWebContents(event.sender);
 });
 
 app.whenReady().then(() => {
     ipcMain.handle('backend/api/filesystem/pickDirectories', pickDirectories);
+    ipcMain.handle('backend/api/filesystem/openPath', async (event, path) => openPath(path));
+    ipcMain.handle('backend/api/filesystem/openUserDataFolder', openUserDataFolder);
 });

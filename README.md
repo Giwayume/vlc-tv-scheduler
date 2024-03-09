@@ -44,3 +44,19 @@ Now you can run the application
 ```
 npm run start
 ```
+
+## TODO Feature List
+
+- Command line configuration to auto play / minimize when started
+- Reorder TV Series List
+- Jump to position in playlist
+- Advertisement folders
+- Analyze video for ad break spots
+- Time boxing to intervals (e.g. 30 minutes), where ads fill in the remaining time
+- Customizable generated TV schedule video to show which episodes are coming up and at what time
+- Ability for playlist to randomize tv series folder order
+- Ability to configure accepted media file extensions
+- Change folder configured after selection / manual entry of folder
+- Support for images
+- Support for livestreams
+- App icon

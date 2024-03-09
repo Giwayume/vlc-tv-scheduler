@@ -56,6 +56,10 @@ const template = `
             </v-col>
         </v-row>
 
+        <h2 class="text-h4 mt-10 mb-3">{{ $t('settings.configHeading') }}</h2>
+        <v-btn color="primary" variant="outlined" @click="openConfigFolder()">
+            {{ $t('settings.openConfigFolder') }}
+        </v-btn>
     </v-container>
 </v-main>
 `;
@@ -101,9 +105,14 @@ const SettingsComponent = {
             vlcStore.setExtraintf(vlcConfig.extraintf);
         }
 
+        async function openConfigFolder() {
+            backend.filesystem.openUserDataFolder();
+        }
+
         return {
             vlcConfig,
             queueVlcConfigUpdate,
+            openConfigFolder,
         };
     }
 };

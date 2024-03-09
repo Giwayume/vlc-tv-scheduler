@@ -19,6 +19,7 @@ const template = `
                     :loading="tableLoading"
                     :items="tablePageItems"
                     :items-length="totalTableItems"
+                    class="app-playlist-table"
                     @update:options="loadTableItems"
                 ></v-data-table-server>
             </v-card>

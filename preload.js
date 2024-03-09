@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('backend', {
     filesystem: {
         pickDirectories: () => ipcRenderer.invoke('backend/api/filesystem/pickDirectories'),
+        openPath: (path) => ipcRenderer.invoke('backend/api/filesystem/openPath', path),
+        openUserDataFolder: () => ipcRenderer.invoke('backend/api/filesystem/openUserDataFolder'),
     },
     playlist: {
         onBuildCompleted: (callback) => ipcRenderer.on('callbacks/playlist/buildCompleted', (_event, value) => callback(value)),

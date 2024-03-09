@@ -53,7 +53,23 @@ function getVlcConfig() {
     }
 }
 
+function normalizeStoreData() {
+    const tvSeriesList = getTvSeriesList();
+    for (const tvSeries of tvSeriesList) {
+        if (tvSeries.folder == null) tvSeries.folder = 'UNDEFINED_FOLDER';
+        if (tvSeries.title == null) tvSeries.title = '';
+        if (tvSeries.playCount == null) tvSeries.playCount = 1;
+        if (tvSeries.playOrder == null) tvSeries.playOrder = 'alphabetical';
+        if (tvSeries.playlistOffset == null) tvSeries.playlistOffset = 0;
+        if (tvSeries.playTimeType == null) tvSeries.playTimeType = 'videoLength';
+        if (tvSeries.playTime == null) tvSeries.playTime = 0;
+        if (tvSeries.cron == null) tvSeries.cron = '* * * * *';
+    }
+    setTvSeriesList(tvSeriesList);
+}
+
 app.whenReady().then(() => {
+    normalizeStoreData();
     ipcMain.handle('backend/api/store/getRemainingPlayTime', getRemainingPlayTime);
     ipcMain.handle('backend/api/store/setTvSeriesList', async (event, tvSeriesList) => setTvSeriesList(tvSeriesList));
     ipcMain.handle('backend/api/store/getTvSeriesList', getTvSeriesList);
