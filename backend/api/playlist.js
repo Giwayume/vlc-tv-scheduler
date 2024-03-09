@@ -285,6 +285,13 @@ async function next() {
     return media;
 }
 
+/** Builds playlist then sends first media in playlist to VLC */
+async function autoplay() {
+    await build();
+    await next();
+}
+
+emitter.on('backend/api/playlist/autoplay', autoplay);
 emitter.on('backend/api/playlist/next', next);
 
 app.whenReady().then(() => {

@@ -13,7 +13,7 @@ const template = `
         <template v-if="tvSeriesList.length > 0">
             <v-expansion-panels class="app-emphasized-open-expansion-panels mb-5">
                 <v-expansion-panel
-                    v-for="media of tvSeriesList"
+                    v-for="(media, mediaIndex) of tvSeriesList"
                     :key="media.uuid"
                 >
                     <v-expansion-panel-title>
@@ -107,6 +107,12 @@ const template = `
                         <v-divider />
 
                         <h3 class="text-h6 mb-2 mt-4" v-t="'media.actionsHeading'" />
+                        <v-btn v-if="mediaIndex > 0" color="primary" variant="outlined" prepend-icon="mdi-arrow-up-circle" class="mr-2" @click="reorderBefore(mediaIndex)">
+                            {{ $t('media.reorderBefore') }}
+                        </v-btn>
+                        <v-btn v-if="mediaIndex < tvSeriesList.length" color="primary" variant="outlined" prepend-icon="mdi-arrow-down-circle" class="mr-2" @click="reorderAfter(mediaIndex)">
+                            {{ $t('media.reorderAfter') }}
+                        </v-btn>
                         <v-btn color="primary" variant="outlined" prepend-icon="mdi-folder" class="mr-2" @click="openTvSeriesFolder(media)">
                             {{ $t('media.openFolder') }}
                         </v-btn>
@@ -200,6 +206,20 @@ const MediaComponent = {
             configurationStore.setTvSeriesList(tvSeriesList.value);
         }
 
+        async function reorderBefore(seriesIndex) {
+            const [tvSeries] = tvSeriesList.value.splice(seriesIndex, 1);
+            tvSeriesList.value.splice(seriesIndex - 1, 0, tvSeries);
+            playlistStore.setIsBuildCompleted(false);
+            configurationStore.setTvSeriesList(tvSeriesList.value);
+        }
+
+        async function reorderAfter(seriesIndex) {
+            const [tvSeries] = tvSeriesList.value.splice(seriesIndex, 1);
+            tvSeriesList.value.splice(seriesIndex + 1, 0, tvSeries);
+            playlistStore.setIsBuildCompleted(false);
+            configurationStore.setTvSeriesList(tvSeriesList.value);
+        }
+
         async function openTvSeriesFolder(series) {
             backend.filesystem.openPath(series.folder);
         }
@@ -218,7 +238,8 @@ const MediaComponent = {
 
         return {
             tvSeriesList, playOrderOptions, playTimeTypeOptions, showDeleteConfirm,
-            queueTvListUpdate, addTvSeries, openTvSeriesFolder, removeTvSeries, removeTvSeriesConfirm,
+            queueTvListUpdate, addTvSeries, openTvSeriesFolder,
+            reorderBefore, reorderAfter, removeTvSeries, removeTvSeriesConfirm,
         };
     }
 };

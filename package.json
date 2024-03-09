@@ -5,6 +5,7 @@
     "main": "main.js",
     "scripts": {
         "start": "electron .",
+        "start:autoplay": "electron . --autoplay --minimize",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "",

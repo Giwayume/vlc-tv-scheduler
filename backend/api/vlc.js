@@ -74,12 +74,17 @@ async function playMedia(media) {
             await vlcClient.getTime(),
         ]);
 
+        const actualVideoLength = playLength - playTime;
+
         if (media.playTimeType === 'videoLength') {
-            const actualVideoLength = playLength - playTime;
-            queueNextPlaylistItem(actualVideoLength);
+            if (actualVideoLength >= 1) {
+                queueNextPlaylistItem(actualVideoLength);
+            }
+        }
+        if (actualVideoLength >= 1) {
+            setRemainingPlayTime(actualVideoLength);
         }
 
-        setRemainingPlayTime(playLength - playTime);
         global.mainWindow.webContents.send('callbacks/playlist/nextMediaStarted');
     } catch (error) {
         global.mainWindow.webContents.send('callbacks/playlist/nextMediaStartFailed');
@@ -113,7 +118,9 @@ async function checkVideoEnd() {
             await vlcClient.getLength(),
             await vlcClient.getTime(),
         ]);
-        setRemainingPlayTime(playLength - playTime);
+        const actualVideoLength = playLength - playTime;
+        if (actualVideoLength < 0) return;
+        setRemainingPlayTime(actualVideoLength);
         if (isStopped || playTime >= playLength - 1) {
             clearTimeout(currentPlayingMediaExpireTimeoutHandle);
             emitter.emit('backend/api/playlist/next');

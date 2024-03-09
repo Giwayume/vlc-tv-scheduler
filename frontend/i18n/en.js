@@ -30,6 +30,8 @@ const en = {
         },
         playTimeLabel: 'Specify Length in Seconds:',
         actionsHeading: 'Actions',
+        reorderBefore: 'Move Up',
+        reorderAfter: 'Move Down',
         openFolder: 'Open Folder',
         removeFolder: 'Remove',
         removeFolderConfirm: {

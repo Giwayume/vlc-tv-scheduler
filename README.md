@@ -20,6 +20,16 @@ VLC TV Scheduler works with directories rather than individual media files. You 
 
 - **Fixed playtime.** You can configure videos in a directory to only play for 10 seconds, as an example, before moving on.
 
+### Command Line Arguments
+
+``--autoplay=true``
+
+The application will automatically open VLC and start playing the playlist when it starts. Useful for a computer that is a dedicated TV device and you want the computer to play videos at startup (in case a power surge causes a reboot, etc).
+
+``--minimize=true``
+
+The application window will minimize after the application starts.
+
 ## Contributing
 
 This is an Electron application. For development, you should have the latest LTS version of Node.js installed.
@@ -47,8 +57,6 @@ npm run start
 
 ## TODO Feature List
 
-- Command line configuration to auto play / minimize when started
-- Reorder TV Series List
 - Jump to position in playlist
 - Advertisement folders
 - Analyze video for ad break spots
