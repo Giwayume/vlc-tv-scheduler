@@ -1,6 +1,6 @@
 # VLC TV Scheduler
 
-Use [VLC](https://www.videolan.org/vlc/) to play your media non-stop, like running your own TV station! This application provides a simple user interface to select folders containing media you want to play, and mixes them together into a playlist that resembles a TV schedule.
+Play your media non-stop by using the **VLC TV Scheduler** to control the [VLC Media Player](https://www.videolan.org/vlc/). VLC TV Scheduler provides a simple user interface to select folders containing media you want to play, and mixes the media folders together into a playlist that resembles a TV schedule.
 
 It automatically controls video playback in VLC (which you should separately install on your system).
 
@@ -32,7 +32,7 @@ The application window will minimize after the application starts.
 
 ## Contributing
 
-This is an Electron application. For development, you should have the latest LTS version of Node.js installed.
+This is an Electron application. For development, you should have the [latest LTS version of Node.js installed](https://nodejs.org/en).
 
 ### Development Workspace Setup
 
