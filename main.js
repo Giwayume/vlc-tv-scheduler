@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path')
 const { emitter } = require('./backend/main');
 
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 const appIcon = path.join(__dirname, 'images/icons8-vlc-480.png');
 
 global.commandLineArguments = process.argv.filter(

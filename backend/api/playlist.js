@@ -5,14 +5,14 @@ const crypto = require('node:crypto');
 const ffprobe = require('ffprobe');
 const ffprobeStatic = require('ffprobe-static');
 const naturalCompare = require("natural-compare-lite");
-const { getRemainingPlayTime, getTvSeriesList } = require('./store');
+const { getAcceptedFileExtensions, getTvSeriesList, getPlaylistConfig } = require('./store');
 const { cronMatchesTimestamp } = require('./cronjob');
 const { emitter } = require('./emitter');
 
 const MAX_SCAN_DEPTH = 64;
 const MAX_QUERY_LOOP_COUNT = 65536;
 
-const extensionCheckRegex = /^(3gp|asf|wmv|au|avi|flv|mov|mp4|ogm|ogg|mkv|mka|ts|mpg|mp3|mp2|nsc|nsv|nut|ra|ram|rm|rv|rmbv|a52|dts|aac|flac|dv|vid|tta|tac|ty|wav|dts|xa)$/;
+let extensionCheckRegex = /^(3gp|asf|wmv|au|avi|flv|mov|mp4|ogm|ogg|mkv|mka|ts|mpg|mp3|mp2|nsc|nsv|nut|ra|ram|rm|rv|rmbv|a52|dts|aac|flac|dv|vid|tta|tac|ty|wav|dts|xa)$/;
 
 const fileListByTvSeries = new Map();
 const fileInfoMap = new Map();
@@ -21,6 +21,7 @@ const playlistLastPlayedIndexByTvSeries = new Map();
 const playlistSubsequentPlayCountByTvSeries = new Map();
 
 let currentScanUuid = null;
+let sortedTvSeriesList = [];
 let currentPlayingTvSeriesIndex = 0;
 
 function uuid() {
@@ -44,6 +45,12 @@ function shuffle(array) {
     }
 
     return array;
+}
+
+function buildAcceptedFileExtensionRegex() {
+    const extensions = getAcceptedFileExtensions();
+    let regexString = '^(' + extensions.filter(extension => /^[a-z0-9]{1,}$/i.test(extension)).join('|') + ')$';
+    extensionCheckRegex = new RegExp(regexString, 'i');
 }
 
 /** Check if file extension is supported */
@@ -140,6 +147,7 @@ async function scanTvSeries(tvSeriesUuid, scanUuid = null) {
         isInitiatedScan = true;
         scanUuid = uuid();
         currentScanUuid = scanUuid;
+        buildAcceptedFileExtensionRegex();
     }
     if (currentScanUuid !== scanUuid) return;
     const tvSeriesList = getTvSeriesList();
@@ -159,6 +167,7 @@ async function scanAll() {
     let didScanComplete = false;
     const scanUuid = uuid();
     currentScanUuid = scanUuid;
+    buildAcceptedFileExtensionRegex();
     const tvSeriesList = getTvSeriesList();
     await Promise.all(tvSeriesList.map((tvSeries) => {
         return scanTvSeries(tvSeries.uuid, scanUuid).catch(() => {});
@@ -185,8 +194,12 @@ async function getFileInfo(filePath) {
 async function build() {
     const scanCompleted = await scanAll();
     if (!scanCompleted) return;
-    const tvSeriesList = getTvSeriesList();
-    for (const tvSeries of tvSeriesList) {
+    const playlistConfig = getPlaylistConfig();
+    sortedTvSeriesList = [...getTvSeriesList()];
+    if (playlistConfig.randomizeTvList) {
+        shuffle(sortedTvSeriesList);
+    }
+    for (const tvSeries of sortedTvSeriesList) {
         const fileList = fileListByTvSeries.get(tvSeries.uuid) ?? [];
         if (tvSeries.playOrder === 'alphabetical') {
             playlistByTvSeries.set(tvSeries.uuid, fileList.sort((a, b) => {
@@ -210,7 +223,7 @@ async function build() {
 async function query(episodeCount) {
     let mediaList = [];
 
-    const tvSeriesList = getTvSeriesList();
+    const tvSeriesList = sortedTvSeriesList;
     const playlistLastPlayedIteratorByTvSeries = new Map();
     const playlistSubsequentPlayIteratorByTvSeries = new Map();
     for (const tvSeries of tvSeriesList) {
@@ -238,7 +251,7 @@ async function queryNext(queryState) {
     let media = null;
     const timestamp = new Date().getTime();
     let totalLoopCount = 0;
-    const tvSeriesList = getTvSeriesList();
+    const tvSeriesList = sortedTvSeriesList;
     while (totalLoopCount <= MAX_QUERY_LOOP_COUNT) {
         totalLoopCount++;
         if (

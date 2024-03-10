@@ -22,6 +22,18 @@ function getTvSeriesList() {
     return store.get('tvSeriesList', []);
 }
 
+function setPlaylistConfig(playlistConfig) {
+    store.set('playlistConfig', playlistConfig);
+}
+
+function getPlaylistConfig() {
+    return store.get('playlistConfig', {
+        randomizeTvList: false,
+        enableTimebox: false,
+        timeboxIntervalSeconds: 900,
+    });
+}
+
 function setVlcPath(vlcPath) {
     store.set('vlcPath', vlcPath);
 }
@@ -53,6 +65,19 @@ function getVlcConfig() {
     }
 }
 
+function setAcceptedFileExtensions(acceptedFileExtensions) {
+    store.set('acceptedFileExtensions', acceptedFileExtensions);
+}
+
+function getAcceptedFileExtensions() {
+    return store.get('acceptedFileExtensions', [
+        '3gp', 'a52', 'aac', 'asf', 'au', 'avi', 'dts', 'dv',
+        'flac', 'flv', 'mka', 'mkv', 'mov', 'mp2', 'mp3', 'mp4', 'mpg',
+        'nsc', 'nsv', 'nut', 'ogg', 'ogm', 'ra', 'ram', 'rm', 'rmbv', 'rv',
+        'tac', 'ts', 'tta', 'ty', 'vid', 'wav', 'wmv', 'xa',
+    ]);
+}
+
 function normalizeStoreData() {
     const tvSeriesList = getTvSeriesList();
     for (const tvSeries of tvSeriesList) {
@@ -66,6 +91,11 @@ function normalizeStoreData() {
         if (tvSeries.cron == null) tvSeries.cron = '* * * * *';
     }
     setTvSeriesList(tvSeriesList);
+    const playlistConfig = getPlaylistConfig();
+    if (playlistConfig.randomizeTvList == null) playlistConfig.randomizeTvList = false;
+    if (playlistConfig.enableTimebox == null) playlistConfig.enableTimebox = false;
+    if (playlistConfig.timeboxIntervalSeconds == null) playlistConfig.timeboxIntervalSeconds = 900;
+    setPlaylistConfig(playlistConfig);
 }
 
 app.whenReady().then(() => {
@@ -73,10 +103,14 @@ app.whenReady().then(() => {
     ipcMain.handle('backend/api/store/getRemainingPlayTime', getRemainingPlayTime);
     ipcMain.handle('backend/api/store/setTvSeriesList', async (event, tvSeriesList) => setTvSeriesList(tvSeriesList));
     ipcMain.handle('backend/api/store/getTvSeriesList', getTvSeriesList);
+    ipcMain.handle('backend/api/store/setPlaylistConfig', async (event, playlistConfig) => setPlaylistConfig(playlistConfig));
+    ipcMain.handle('backend/api/store/getPlaylistConfig', getPlaylistConfig);
     ipcMain.handle('backend/api/store/setVlcConfig', async (event, vlcConfig) => setVlcConfig(vlcConfig));
     ipcMain.handle('backend/api/store/getVlcConfig', getVlcConfig);
-    ipcMain.handle('backend/api/store/setVlcPath', async (event, vlcConfig) => setVlcPath(vlcConfig));
+    ipcMain.handle('backend/api/store/setVlcPath', async (event, path) => setVlcPath(path));
     ipcMain.handle('backend/api/store/getVlcPath', getVlcPath);
+    ipcMain.handle('backend/api/store/setAcceptedFileExtensions', async (event, acceptedFileExtensions) => setAcceptedFileExtensions(acceptedFileExtensions));
+    ipcMain.handle('backend/api/store/getAcceptedFileExtensions', getAcceptedFileExtensions);
 });
 
 module.exports = {
@@ -84,7 +118,11 @@ module.exports = {
     getRemainingPlayTime,
     setTvSeriesList,
     getTvSeriesList,
+    setPlaylistConfig,
+    getPlaylistConfig,
     getVlcConfig,
     setVlcPath,
     getVlcPath,
+    setAcceptedFileExtensions,
+    getAcceptedFileExtensions,
 };

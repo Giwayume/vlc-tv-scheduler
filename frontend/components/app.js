@@ -14,6 +14,7 @@ const AppComponent = {
         configurationStore.initialize();
 
         const playlistStore = usePlaylistStore();
+        playlistStore.initialize();
         backend.playlist.onBuildCompleted(() => {
             playlistStore.setIsBuildCompleted(true);
         });

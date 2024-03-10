@@ -62,7 +62,6 @@ npm run start
 - Time boxing to intervals (e.g. 30 minutes), where ads fill in the remaining time
 - Customizable generated TV schedule video to show which episodes are coming up and at what time
 - Ability for playlist to randomize tv series folder order
-- Ability to configure accepted media file extensions
 - Change folder configured after selection / manual entry of folder
 - Support for images
 - Support for livestreams

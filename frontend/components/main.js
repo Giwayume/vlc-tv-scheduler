@@ -62,6 +62,7 @@ const MainComponent = {
 
         watch(() => tab.value, (tabName) => {
             router.push('/main/' + tabName);
+            window.scrollTo(0, 0);
         });
 
         async function stopVlc() {

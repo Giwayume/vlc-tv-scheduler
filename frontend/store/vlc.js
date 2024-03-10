@@ -28,19 +28,19 @@ export const useVlcStore = defineStore('vlcStore', {
         },
         setHost(host) {
             this.host = host;
-            queueUpdateBackendVlcConfig();
+            this.queueUpdateBackendVlcConfig();
         },
         setPort(port) {
             this.port = port;
-            queueUpdateBackendVlcConfig();
+            this.queueUpdateBackendVlcConfig();
         },
         setPassword(password) {
             this.password = password;
-            queueUpdateBackendVlcConfig();
+            this.queueUpdateBackendVlcConfig();
         },
         setExtraintf(extraintf) {
             this.extraintf = extraintf;
-            queueUpdateBackendVlcConfig();
+            this.queueUpdateBackendVlcConfig();
         },
         queueUpdateBackendVlcConfig() {
             clearTimeout(updateBackendVlcConfigTimerHandle);
@@ -54,7 +54,7 @@ export const useVlcStore = defineStore('vlcStore', {
                 port: this.port,
                 password: this.password,
                 extraintf: this.extraintf,
-                options: this.options,
+                options: JSON.parse(JSON.stringify(this.options)),
             });
         }
     }
