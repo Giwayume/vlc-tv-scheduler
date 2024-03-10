@@ -62,6 +62,7 @@ async function playMedia(media) {
     try {
         currentPlayingMediaStartTimestamp = new Date().getTime();
         queueNextPlaylistItem(media.duration);
+        setRemainingPlayTime(media.duration);
 
         currentPlayingMedia = null;
 
