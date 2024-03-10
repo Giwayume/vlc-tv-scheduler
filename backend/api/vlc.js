@@ -66,6 +66,7 @@ async function playMedia(media) {
         currentPlayingMedia = null;
 
         await createVlcProcess();
+        vlcClient.emptyPlaylist();
         await vlcClient.playFile(media.file, { wait: true });
         currentPlayingMedia = media;
 

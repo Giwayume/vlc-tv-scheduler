@@ -60,8 +60,7 @@ npm run start
 - Advertisement folders
 - Analyze video for ad break spots
 - Time boxing to intervals (e.g. 30 minutes), where ads fill in the remaining time
-- Customizable generated TV schedule video to show which episodes are coming up and at what time
-- Ability for playlist to randomize tv series folder order
+- Create a "coming up next" screen dynamically (list of future episodes & times), which can be shown during ad breaks
 - Change folder configured after selection / manual entry of folder
 - Support for images
 - Support for livestreams

@@ -29,6 +29,7 @@ function setPlaylistConfig(playlistConfig) {
 function getPlaylistConfig() {
     return store.get('playlistConfig', {
         randomizeTvList: false,
+        randomizeTvSeriesStartOffset: false,
         enableTimebox: false,
         timeboxIntervalSeconds: 900,
     });
@@ -93,6 +94,7 @@ function normalizeStoreData() {
     setTvSeriesList(tvSeriesList);
     const playlistConfig = getPlaylistConfig();
     if (playlistConfig.randomizeTvList == null) playlistConfig.randomizeTvList = false;
+    if (playlistConfig.randomizeTvSeriesStartOffset == null) playlistConfig.randomizeTvSeriesStartOffset = false;
     if (playlistConfig.enableTimebox == null) playlistConfig.enableTimebox = false;
     if (playlistConfig.timeboxIntervalSeconds == null) playlistConfig.timeboxIntervalSeconds = 900;
     setPlaylistConfig(playlistConfig);

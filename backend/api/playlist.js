@@ -208,7 +208,9 @@ async function build() {
         } else if (tvSeries.playOrder === 'random') {
             playlistByTvSeries.set(tvSeries.uuid, shuffle(fileList));
         }
-        let playlistIndex = -1 + tvSeries.playlistOffset;
+        const playlistOffset = playlistConfig.randomizeTvSeriesStartOffset
+            ? Math.floor(Math.random() * fileList.length) : tvSeries.playlistOffset;
+        let playlistIndex = -1 + playlistOffset;
         if (playlistIndex >= fileList.length) playlistIndex = -1;
         if (playlistIndex < -1) playlistIndex += fileList.length;
         if (playlistIndex < -1) playlistIndex = -1;

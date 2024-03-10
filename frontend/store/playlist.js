@@ -7,14 +7,18 @@ export const usePlaylistStore = defineStore('playlistStore', {
         return {
             isBuildCompleted: false,
             randomizeTvList: false,
+            randomizeTvSeriesStartOffset: false,
             enableTimebox: false,
             timeboxIntervalSeconds: 900,
         };
     },
     actions: {
         async initialize() {
-            const { randomizeTvList, enableTimebox, timeboxIntervalSeconds } = await backend.store.getPlaylistConfig();
+            const {
+                randomizeTvList, randomizeTvSeriesStartOffset, enableTimebox, timeboxIntervalSeconds,
+            } = await backend.store.getPlaylistConfig();
             this.randomizeTvList = randomizeTvList;
+            this.randomizeTvSeriesStartOffset = randomizeTvSeriesStartOffset;
             this.enableTimebox = enableTimebox;
             this.timeboxIntervalSeconds = timeboxIntervalSeconds;
         },
@@ -26,6 +30,10 @@ export const usePlaylistStore = defineStore('playlistStore', {
         },
         setRandomizeTvList(randomizeTvList) {
             this.randomizeTvList = randomizeTvList;
+            this.queueUpdateBackendPlaylistConfig();
+        },
+        setRandomizeTvSeriesStartOffset(randomizeTvSeriesStartOffset) {
+            this.randomizeTvSeriesStartOffset = randomizeTvSeriesStartOffset;
             this.queueUpdateBackendPlaylistConfig();
         },
         setEnableTimebox(enableTimebox) {
@@ -45,6 +53,7 @@ export const usePlaylistStore = defineStore('playlistStore', {
         updateBackendPlaylistConfig() {
             backend.store.setPlaylistConfig({
                 randomizeTvList: this.randomizeTvList,
+                randomizeTvSeriesStartOffset: this.randomizeTvSeriesStartOffset,
                 enableTimebox: this.enableTimebox,
                 timeboxIntervalSeconds: this.timeboxIntervalSeconds,
             });

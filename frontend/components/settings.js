@@ -77,6 +77,12 @@ const template = `
             @update:modelValue="queuePlaylistConfigUpdate()"
         />
         <v-checkbox
+            v-model="playlistConfig.randomizeTvSeriesStartOffset"
+            :label="$t('settings.randomizeTvSeriesPlayOffsetLabel')"
+            hide-details="auto"
+            @update:modelValue="queuePlaylistConfigUpdate()"
+        />
+        <v-checkbox
             v-model="playlistConfig.enableTimebox"
             :label="$t('settings.enableTimeboxLabel')"
             hide-details="auto"
@@ -132,6 +138,7 @@ const SettingsComponent = {
 
         const playlistConfig = reactive({
             randomizeTvList: false,
+            randomizeTvSeriesStartOffset: false,
             enableTimebox: false,
             timeboxIntervalSeconds: 900,
         });
@@ -147,6 +154,7 @@ const SettingsComponent = {
         onMounted(() => {
             acceptedFileExtensions.value = configurationStore.acceptedFileExtensions;
             playlistConfig.randomizeTvList = playlistStore.randomizeTvList;
+            playlistConfig.randomizeTvSeriesStartOffset = playlistStore.randomizeTvSeriesStartOffset;
             playlistConfig.enableTimebox = playlistStore.enableTimebox;
             playlistConfig.timeboxIntervalSeconds = playlistStore.timeboxIntervalSeconds;
             vlcConfig.path = vlcStore.path;
@@ -196,6 +204,7 @@ const SettingsComponent = {
             window.clearTimeout(playlistConfigUpdateTimeoutHandle);
             playlistStore.setIsBuildCompleted(false);
             playlistStore.setRandomizeTvList(playlistConfig.randomizeTvList);
+            playlistStore.setRandomizeTvSeriesStartOffset(playlistConfig.randomizeTvSeriesStartOffset);
             playlistStore.setEnableTimebox(playlistConfig.enableTimebox);
             playlistStore.setTimeboxIntervalSeconds(playlistConfig.timeboxIntervalSeconds);
         }

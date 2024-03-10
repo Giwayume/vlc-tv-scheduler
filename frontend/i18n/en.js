@@ -70,6 +70,7 @@ const en = {
         playlistHeading: 'Playlist',
         configHeading: 'Configuration Management',
         randomizeTvListLabel: 'Randomize TV series order when generating a playlist',
+        randomizeTvSeriesPlayOffsetLabel: 'Randomize which episode a TV series starts on when generating a playlist',
         enableTimeboxLabel: 'Force all media to play on a consistent schedule (imitate a real TV schedule with ad breaks)',
         timeboxIntervalLabel: 'Play shows in intervals of (seconds):',
         openConfigFolder: 'Open Configuration Directory',
