@@ -10,6 +10,8 @@ let currentPlayingMediaStartTimestamp = 0;
 let checkVideoEndIntervalHandle = null;
 let autoScheduledRestartTimeoutHandle = null;
 let isAutoScheduledRestartPending = false;
+let lastCheckVideoEndPlayTime = null;
+let pausedStartTime = null;
 let vlcProcess = null;
 let vlcClient = null;
 
@@ -87,11 +89,14 @@ async function playMedia(media) {
         setRemainingPlayTime(media.duration);
 
         currentPlayingMedia = null;
+        pausedStartTime = null;
 
         await createVlcProcess();
-        vlcClient.emptyPlaylist();
+        await vlcClient.emptyPlaylist();
+        pausedStartTime = null;
         await vlcClient.playFile(media.file, { wait: true });
         currentPlayingMedia = media;
+        pausedStartTime = null;
 
         const [playLength, playTime] = await Promise.all([
             await vlcClient.getLength(),
@@ -134,6 +139,7 @@ async function checkVideoEnd() {
     if (vlcProcess == null) {
         clearInterval(checkVideoEndIntervalHandle);
         setRemainingPlayTime(0);
+        lastCheckVideoEndPlayTime = null;
         return;
     }
     if (currentPlayingMedia != null) {
@@ -145,9 +151,27 @@ async function checkVideoEnd() {
         const actualVideoLength = playLength - playTime;
         if (actualVideoLength < 0) return;
         setRemainingPlayTime(actualVideoLength);
-        if (isStopped || playTime >= playLength - 1) {
+
+        const { pauseSkipTime } = getVlcPreferences();
+
+        let needsPauseSkip = false;
+        if (playTime == lastCheckVideoEndPlayTime) {
+            if (pausedStartTime == null) {
+                pausedStartTime = new Date().getTime();
+            }
+            if (new Date().getTime() - (pauseSkipTime * 1000) > pausedStartTime) {
+                pausedStartTime = null;
+                needsPauseSkip = true;
+            }
+        }
+
+        if (isStopped || playTime >= playLength - 1 || needsPauseSkip) {
             emitter.emit('backend/api/playlist/next');
         }
+
+        lastCheckVideoEndPlayTime = playTime;
+    } else {
+        lastCheckVideoEndPlayTime = null;
     }
 }
 

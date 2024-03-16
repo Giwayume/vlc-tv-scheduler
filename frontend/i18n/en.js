@@ -65,6 +65,7 @@ const en = {
         vlcRemotePort: 'Remote Port',
         vlcRemotePassword: 'Remote Password',
         vlcRemoteExtraintf: 'Remote Extraintf',
+        vlcPauseSkipTime: 'Skip to Next Video if Paused for (Seconds)',
         vlcAutoScheduleRestartsLabel: 'Periodically restart VLC when switching media (helps prevent hang-ups where this program can no longer talk to VLC)',
         vlcRestartIntervalLabel: 'Restart Every (seconds):',        
         mediaHeading: 'Media',

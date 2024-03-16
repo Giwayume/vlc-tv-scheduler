@@ -74,6 +74,7 @@ function getVlcPreferences() {
     return store.get('vlcPreferences', {
         autoScheduleRestarts: true,
         restartInterval: 86400,
+        pauseSkipTime: 10,
     });
 }
 
@@ -103,12 +104,19 @@ function normalizeStoreData() {
         if (tvSeries.cron == null) tvSeries.cron = '* * * * *';
     }
     setTvSeriesList(tvSeriesList);
+
     const playlistConfig = getPlaylistConfig();
     if (playlistConfig.randomizeTvList == null) playlistConfig.randomizeTvList = false;
     if (playlistConfig.randomizeTvSeriesStartOffset == null) playlistConfig.randomizeTvSeriesStartOffset = false;
     if (playlistConfig.enableTimebox == null) playlistConfig.enableTimebox = false;
     if (playlistConfig.timeboxIntervalSeconds == null) playlistConfig.timeboxIntervalSeconds = 900;
     setPlaylistConfig(playlistConfig);
+
+    const vlcPreferences = getVlcPreferences();
+    if (vlcPreferences.autoScheduleRestarts == null) vlcPreferences.autoScheduleRestarts = true;
+    if (vlcPreferences.restartInterval == null) vlcPreferences.restartInterval = 86400;
+    if (vlcPreferences.pauseSkipTime == null) vlcPreferences.pauseSkipTime = 10;
+    setVlcPreferences(vlcPreferences);
 }
 
 app.whenReady().then(() => {

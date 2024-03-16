@@ -14,6 +14,7 @@ export const useVlcStore = defineStore('vlcStore', {
             options: [],
             autoScheduleRestarts: true,
             restartInterval: 86400,
+            pauseSkipTime: 10,
         };
     },
     actions: {
@@ -24,9 +25,10 @@ export const useVlcStore = defineStore('vlcStore', {
             this.port = port;
             this.password = password;
             this.extraintf = extraintf;
-            const { autoScheduleRestarts, restartInterval } = await backend.store.getVlcPreferences();
+            const { autoScheduleRestarts, restartInterval, pauseSkipTime } = await backend.store.getVlcPreferences();
             this.autoScheduleRestarts = autoScheduleRestarts;
             this.restartInterval = restartInterval;
+            this.pauseSkipTime = pauseSkipTime;
         },
         setPath(path) {
             this.path = path;
@@ -50,11 +52,15 @@ export const useVlcStore = defineStore('vlcStore', {
         },
         setAutoScheduleRestarts(autoScheduleRestarts) {
             this.autoScheduleRestarts = autoScheduleRestarts;
-            this.updateBackendVlcPreferences();
+            this.queueUpdateBackendVlcPreferences();
         },
         setRestartInterval(restartInterval) {
             this.restartInterval = restartInterval;
-            this.updateBackendVlcPreferences();
+            this.queueUpdateBackendVlcPreferences();
+        },
+        setPauseSkipTime(pauseSkipTime) {
+            this.pauseSkipTime = pauseSkipTime;
+            this.queueUpdateBackendVlcPreferences();
         },
         queueUpdateBackendVlcConfig() {
             clearTimeout(updateBackendVlcConfigTimerHandle);
@@ -71,10 +77,17 @@ export const useVlcStore = defineStore('vlcStore', {
                 options: JSON.parse(JSON.stringify(this.options)),
             });
         },
+        queueUpdateBackendVlcPreferences() {
+            clearTimeout(updateBackendVlcPreferencesTimerHandle);
+            updateBackendVlcPreferencesTimerHandle = setTimeout(() => {
+                this.updateBackendVlcPreferences();
+            }, 1);
+        },
         updateBackendVlcPreferences() {
             backend.store.setVlcPreferences({
                 autoScheduleRestarts: this.autoScheduleRestarts,
                 restartInterval: this.restartInterval,
+                pauseSkipTime: this.pauseSkipTime,
             });
         },
     }

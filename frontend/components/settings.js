@@ -56,6 +56,17 @@ const template = `
                     @update:modelValue="queueVlcConfigUpdate()"
                 />
             </v-col>
+            <v-col
+                cols="12"
+                sm="4"
+            >
+                <v-text-field
+                    v-model.number="vlcPreferences.pauseSkipTime"
+                    :label="$t('settings.vlcPauseSkipTime')"
+                    hide-details="auto"
+                    @update:modelValue="queueVlcPreferencesUpdate()"
+                />
+            </v-col>
         </v-row>
         <v-checkbox
             v-model="vlcPreferences.autoScheduleRestarts"
@@ -180,6 +191,7 @@ const SettingsComponent = {
         const vlcPreferences = reactive({
             autoScheduleRestarts: false,
             restartInterval: 0,
+            pauseSkipTime: 0,
         });
 
         onMounted(() => {
@@ -195,6 +207,7 @@ const SettingsComponent = {
             vlcConfig.extraintf = vlcStore.extraintf;
             vlcPreferences.autoScheduleRestarts = vlcStore.autoScheduleRestarts;
             vlcPreferences.restartInterval = vlcStore.restartInterval;
+            vlcPreferences.pauseSkipTime = vlcStore.pauseSkipTime;
         });
 
         async function queueAcceptedFileExtensionsUpdate() {
@@ -237,6 +250,7 @@ const SettingsComponent = {
             window.clearTimeout(vlcPreferencesUpdateTimeoutHandle);
             vlcStore.setAutoScheduleRestarts(vlcPreferences.autoScheduleRestarts);
             vlcStore.setRestartInterval(vlcPreferences.restartInterval);
+            vlcStore.setPauseSkipTime(vlcPreferences.pauseSkipTime);
         }
 
         async function queuePlaylistConfigUpdate() {
