@@ -3,27 +3,41 @@ import { usePlaylistStore } from '../store/playlist.js';
 import { useVlcStore } from '../store/vlc.js';
 import emitter from '../lib/emitter.js';
 
+const { ref } = Vue;
+
 const template = `
-<router-view />
+<router-view v-if="isInitialzed" />
 `;
 
 const AppComponent = {
     template,
     setup() {
-        const configurationStore = useConfigurationStore();
-        configurationStore.initialize();
 
-        const playlistStore = usePlaylistStore();
-        playlistStore.initialize();
-        backend.playlist.onBuildCompleted(() => {
-            playlistStore.setIsBuildCompleted(true);
-        });
-        backend.playlist.onNextMediaStarted(() => {
-            emitter.emit('playlist/nextMediaStarted');
-        });
+        const isInitialzed  = ref(false);
 
-        const vlcStore = useVlcStore();
-        vlcStore.initialize();
+        async function initialize() {
+            const configurationStore = useConfigurationStore();
+            await configurationStore.initialize();
+
+            const playlistStore = usePlaylistStore();
+            await playlistStore.initialize();
+            backend.playlist.onBuildCompleted(() => {
+                playlistStore.setIsBuildCompleted(true);
+            });
+            backend.playlist.onNextMediaStarted(() => {
+                emitter.emit('playlist/nextMediaStarted');
+            });
+
+            const vlcStore = useVlcStore();
+            await vlcStore.initialize();
+
+            isInitialzed.value = true;
+        }
+        initialize();
+
+        return {
+            isInitialzed,
+        };
     }
 };
 

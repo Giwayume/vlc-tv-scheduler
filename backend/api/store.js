@@ -66,6 +66,17 @@ function getVlcConfig() {
     }
 }
 
+function setVlcPreferences(vlcPreferences) {
+    store.set('vlcPreferences', vlcPreferences);
+}
+
+function getVlcPreferences() {
+    return store.get('vlcPreferences', {
+        autoScheduleRestarts: true,
+        restartInterval: 86400,
+    });
+}
+
 function setAcceptedFileExtensions(acceptedFileExtensions) {
     store.set('acceptedFileExtensions', acceptedFileExtensions);
 }
@@ -109,6 +120,8 @@ app.whenReady().then(() => {
     ipcMain.handle('backend/api/store/getPlaylistConfig', getPlaylistConfig);
     ipcMain.handle('backend/api/store/setVlcConfig', async (event, vlcConfig) => setVlcConfig(vlcConfig));
     ipcMain.handle('backend/api/store/getVlcConfig', getVlcConfig);
+    ipcMain.handle('backend/api/store/setVlcPreferences', async (event, vlcPreferences) => setVlcPreferences(vlcPreferences));
+    ipcMain.handle('backend/api/store/getVlcPreferences', getVlcPreferences);
     ipcMain.handle('backend/api/store/setVlcPath', async (event, path) => setVlcPath(path));
     ipcMain.handle('backend/api/store/getVlcPath', getVlcPath);
     ipcMain.handle('backend/api/store/setAcceptedFileExtensions', async (event, acceptedFileExtensions) => setAcceptedFileExtensions(acceptedFileExtensions));
@@ -125,6 +138,8 @@ module.exports = {
     getVlcConfig,
     setVlcPath,
     getVlcPath,
+    setVlcPreferences,
+    getVlcPreferences,
     setAcceptedFileExtensions,
     getAcceptedFileExtensions,
 };

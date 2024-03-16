@@ -2,12 +2,14 @@ const { app, ipcMain } = require('electron/main');
 const { spawn } = require('node:child_process');
 const VLC = require("vlc-client");
 const { emitter } = require('./emitter');
-const { setRemainingPlayTime, getVlcConfig, getVlcPath } = require('./store');
+const { killPort } = require('./process');
+const { setRemainingPlayTime, getVlcConfig, getVlcPath, getVlcPreferences } = require('./store');
 
 let currentPlayingMedia = null;
 let currentPlayingMediaStartTimestamp = 0;
-let currentPlayingMediaExpireTimeoutHandle = null;
 let checkVideoEndIntervalHandle = null;
+let autoScheduledRestartTimeoutHandle = null;
+let isAutoScheduledRestartPending = false;
 let vlcProcess = null;
 let vlcClient = null;
 
@@ -16,6 +18,15 @@ async function createVlcProcess() {
     const vlcPath = getVlcPath();
     if (vlcPath == null) return;
     if (!vlcProcess) {
+        clearInterval(autoScheduledRestartTimeoutHandle);
+        isAutoScheduledRestartPending = false;
+
+        try {
+            if (vlcConfig.host === 'localhost' || vlcConfig.host === '127.0.0.1') {
+                await killPort(vlcConfig.port);
+            }
+        } catch (error) {}
+
         try {
             vlcProcess = spawn(vlcPath, [
                 '--extraintf', vlcConfig.extraintf,
@@ -41,6 +52,13 @@ async function createVlcProcess() {
         await new Promise((resolve) => {
             setTimeout(resolve, 1000);
         });
+
+        const { autoScheduleRestarts, restartInterval } = getVlcPreferences();
+        if (autoScheduleRestarts) {
+            autoScheduledRestartTimeoutHandle = setTimeout(() => {
+                isAutoScheduledRestartPending = true;
+            }, restartInterval * 1000);
+        }
     }
     if (!vlcClient) {
         vlcClient = new VLC.Client({
@@ -60,8 +78,12 @@ async function playMedia(media) {
     }
 
     try {
+        if (isAutoScheduledRestartPending) {
+            isAutoScheduledRestartPending = false;
+            await exit();
+        }
+
         currentPlayingMediaStartTimestamp = new Date().getTime();
-        queueNextPlaylistItem(media.duration);
         setRemainingPlayTime(media.duration);
 
         currentPlayingMedia = null;
@@ -78,11 +100,6 @@ async function playMedia(media) {
 
         const actualVideoLength = playLength - playTime;
 
-        if (media.playTimeType === 'videoLength') {
-            if (actualVideoLength >= 1) {
-                queueNextPlaylistItem(actualVideoLength);
-            }
-        }
         if (actualVideoLength >= 1) {
             setRemainingPlayTime(actualVideoLength);
         }
@@ -90,12 +107,15 @@ async function playMedia(media) {
         global.mainWindow.webContents.send('callbacks/playlist/nextMediaStarted');
     } catch (error) {
         global.mainWindow.webContents.send('callbacks/playlist/nextMediaStartFailed');
+        console.error('[api/vlc/playMedia] Error occurred when starting media ', error);
+        setTimeout(() => {
+            playMedia(media);
+        }, 5000);
     }
 }
 
 async function exit() {
     clearInterval(checkVideoEndIntervalHandle);
-    clearTimeout(currentPlayingMediaExpireTimeoutHandle);
     if (vlcProcess) {
         vlcProcess.kill();
         vlcProcess = null;
@@ -104,12 +124,14 @@ async function exit() {
         vlcClient = null;
     }
     setRemainingPlayTime(0);
+    await new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+    });
 }
 
 /** Poll VLC to check if the video has ended sooner than expected, and advance the playlist. */
 async function checkVideoEnd() {
     if (vlcProcess == null) {
-        clearTimeout(currentPlayingMediaExpireTimeoutHandle);
         clearInterval(checkVideoEndIntervalHandle);
         setRemainingPlayTime(0);
         return;
@@ -124,18 +146,9 @@ async function checkVideoEnd() {
         if (actualVideoLength < 0) return;
         setRemainingPlayTime(actualVideoLength);
         if (isStopped || playTime >= playLength - 1) {
-            clearTimeout(currentPlayingMediaExpireTimeoutHandle);
             emitter.emit('backend/api/playlist/next');
         }
     }
-}
-
-/** Queue the playlist to advance at the expected duration */
-function queueNextPlaylistItem(durationInSeconds) {
-    clearTimeout(currentPlayingMediaExpireTimeoutHandle);
-    currentPlayingMediaExpireTimeoutHandle = setTimeout(() => {
-        emitter.emit('backend/api/playlist/next');
-    }, durationInSeconds * 1000);
 }
 
 emitter.on('backend/api/vlc/playMedia', playMedia);

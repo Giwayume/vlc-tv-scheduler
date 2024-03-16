@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('backend', {
         getPlaylistConfig: () => ipcRenderer.invoke('backend/api/store/getPlaylistConfig'),
         setVlcConfig: (vlcConfig) => ipcRenderer.invoke('backend/api/store/setVlcConfig', vlcConfig),
         getVlcConfig: () => ipcRenderer.invoke('backend/api/store/getVlcConfig'),
+        setVlcPreferences: (vlcPreferences) => ipcRenderer.invoke('backend/api/store/setVlcPreferences', vlcPreferences),
+        getVlcPreferences: () => ipcRenderer.invoke('backend/api/store/getVlcPreferences'),
         setVlcPath: (vlcPath) => ipcRenderer.invoke('backend/api/store/setVlcPath', vlcPath),
         getVlcPath: () => ipcRenderer.invoke('backend/api/store/getVlcPath'),
         setAcceptedFileExtensions: (acceptedFileExtensions) => ipcRenderer.invoke('backend/api/store/setAcceptedFileExtensions', acceptedFileExtensions),

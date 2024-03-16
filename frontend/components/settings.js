@@ -57,6 +57,31 @@ const template = `
                 />
             </v-col>
         </v-row>
+        <v-checkbox
+            v-model="vlcPreferences.autoScheduleRestarts"
+            :label="$t('settings.vlcAutoScheduleRestartsLabel')"
+            hide-details="auto"
+            class="mt-5"
+            @update:modelValue="queueVlcPreferencesUpdate()"
+        />
+        <div v-if="vlcPreferences.autoScheduleRestarts" class="pl-10">
+            <v-row>
+                <v-col
+                    cols="12"
+                    sm="6"
+                >
+                    <v-text-field
+                        v-model.number="vlcPreferences.restartInterval"
+                        type="number"
+                        step="1"
+                        min="1"
+                        :label="$t('settings.vlcRestartIntervalLabel')"
+                        hide-details="auto"
+                        @update:modelValue="queueVlcPreferencesUpdate()"
+                    />
+                </v-col>
+            </v-row>
+        </div>
 
         <h2 class="text-h4 mt-10 mb-3">{{ $t('settings.mediaHeading') }}</h2>
         <v-combobox
@@ -127,6 +152,7 @@ const SettingsComponent = {
         let acceptedFileExtensionsUpdateTimeoutHandle = null;
         let vlcConfigUpdateTimeoutHandle = null;
         let playlistConfigUpdateTimeoutHandle = null;
+        let vlcPreferencesUpdateTimeoutHandle = null;
 
         const acceptedFileExtensions = ref([]);
         const suggestedFileExtensions = ref([
@@ -151,6 +177,11 @@ const SettingsComponent = {
             extraintf: '',
         });
 
+        const vlcPreferences = reactive({
+            autoScheduleRestarts: false,
+            restartInterval: 0,
+        });
+
         onMounted(() => {
             acceptedFileExtensions.value = configurationStore.acceptedFileExtensions;
             playlistConfig.randomizeTvList = playlistStore.randomizeTvList;
@@ -162,6 +193,8 @@ const SettingsComponent = {
             vlcConfig.port = vlcStore.port;
             vlcConfig.password = vlcStore.password;
             vlcConfig.extraintf = vlcStore.extraintf;
+            vlcPreferences.autoScheduleRestarts = vlcStore.autoScheduleRestarts;
+            vlcPreferences.restartInterval = vlcStore.restartInterval;
         });
 
         async function queueAcceptedFileExtensionsUpdate() {
@@ -193,6 +226,19 @@ const SettingsComponent = {
             vlcStore.setExtraintf(vlcConfig.extraintf);
         }
 
+        async function queueVlcPreferencesUpdate() {
+            window.clearTimeout(vlcPreferencesUpdateTimeoutHandle);
+            vlcPreferencesUpdateTimeoutHandle = window.setTimeout(() => {
+                vlcPreferencesUpdate();
+            }, 2000);
+        }
+
+        async function vlcPreferencesUpdate() {
+            window.clearTimeout(vlcPreferencesUpdateTimeoutHandle);
+            vlcStore.setAutoScheduleRestarts(vlcPreferences.autoScheduleRestarts);
+            vlcStore.setRestartInterval(vlcPreferences.restartInterval);
+        }
+
         async function queuePlaylistConfigUpdate() {
             window.clearTimeout(playlistConfigUpdateTimeoutHandle);
             playlistConfigUpdateTimeoutHandle = window.setTimeout(() => {
@@ -218,8 +264,10 @@ const SettingsComponent = {
             suggestedFileExtensions,
             playlistConfig,
             vlcConfig,
+            vlcPreferences,
             queueAcceptedFileExtensionsUpdate,
             queueVlcConfigUpdate,
+            queueVlcPreferencesUpdate,
             queuePlaylistConfigUpdate,
             openConfigFolder,
         };

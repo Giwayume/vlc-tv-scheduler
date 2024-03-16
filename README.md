@@ -57,6 +57,7 @@ npm run start
 
 ## TODO Feature List
 
+- Re-implement fixed playtime after stability testing
 - Advertisement folders
 - Analyze video for ad break spots
 - Time boxing to intervals (e.g. 30 minutes), where ads fill in the remaining time
