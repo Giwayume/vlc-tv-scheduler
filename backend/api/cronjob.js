@@ -45,6 +45,90 @@ function cronMatchesTimestamp(cronjob, timestamp) {
     return true;
 }
 
+/** Parses a cron field into type and range/values */
+function parseCron(cron) {
+    const parts = cron.split(' ');
+    if (parts.length !== 5) {
+        throw new Error('Invalid cron string. Must have 5 parts.');
+    }
+
+    const parseField = part => {
+        if (part === '*') return { type: 'wildcard' };
+        if (part.includes('/')) {
+            const [range, step] = part.split('/');
+            return { type: 'step', range: range === '*' ? null : range.split('-').map(Number), step: parseInt(step, 10) };
+        }
+        if (part.includes('-')) {
+            return { type: 'range', range: part.split('-').map(Number) };
+        }
+        return { type: 'list', values: part.split(',').map(Number) };
+    };
+
+    return {
+        minute: parseField(parts[0]),
+        hour: parseField(parts[1]),
+        dayOfMonth: parseField(parts[2]),
+        month: parseField(parts[3]),
+        dayOfWeek: parseField(parts[4]),
+    };
+}
+
+/** Check if an individual field in a cronjob matches */
+function matchField(value, field) {
+    if (field.type === 'wildcard') return true;
+    if (field.type === 'list') return field.values.includes(value);
+    if (field.type === 'range') return value >= field.range[0] && value <= field.range[1];
+    if (field.type === 'step') {
+        const start = field.range ? field.range[0] : 0;
+        return (value - start) % field.step === 0;
+    }
+    return false;
+}
+
+/** Give a cron string and starting date, finds the next time that the cron will run */
+function getNextMatchingTime(cron, fromDate = new Date()) {
+    const fields = parseCron(cron);
+    const maxValues = { minute: 59, hour: 23, dayOfMonth: 31, month: 12, dayOfWeek: 6 };
+
+    const nextDate = new Date(fromDate);
+    nextDate.setSeconds(0);
+    nextDate.setMilliseconds(0);
+
+    while (true) {
+        if (!matchField(nextDate.getMinutes(), fields.minute, maxValues.minute)) {
+            nextDate.setMinutes(nextDate.getMinutes() + 1);
+            nextDate.setSeconds(0);
+            continue;
+        }
+
+        if (!matchField(nextDate.getHours(), fields.hour, maxValues.hour)) {
+            nextDate.setMinutes(0);
+            nextDate.setHours(nextDate.getHours() + 1);
+            continue;
+        }
+
+        if (!matchField(nextDate.getDate(), fields.dayOfMonth, maxValues.dayOfMonth)) {
+            nextDate.setHours(0);
+            nextDate.setDate(nextDate.getDate() + 1);
+            continue;
+        }
+
+        if (!matchField(nextDate.getMonth() + 1, fields.month, maxValues.month)) {
+            nextDate.setDate(1);
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            continue;
+        }
+
+        if (!matchField(nextDate.getDay(), fields.dayOfWeek, maxValues.dayOfWeek)) {
+            nextDate.setDate(nextDate.getDate() + 1);
+            continue;
+        }
+
+        return nextDate;
+    }
+}
+
 module.exports = {
     cronMatchesTimestamp,
+    getNextMatchingTime,
 };

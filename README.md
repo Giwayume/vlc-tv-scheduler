@@ -30,6 +30,16 @@ The application will automatically open VLC and start playing the playlist when 
 
 The application window will minimize after the application starts.
 
+## VLC Player Configuration
+
+By default, VLC does not open in full screen, which is probably what you want if you're using this program. To do so:
+
+1. Open VLC Media Player.
+2. Go to the menu, click **Tools** and select **Preferences**.
+3. When the Preferences menu appears, click the **Video** button to bring up the **General Video Settings**.
+4. Check the **Fullscreen** checkbox.
+5. Click the **Save** button!
+
 ## Contributing
 
 This is an Electron application. For development, you should have the [latest LTS version of Node.js installed](https://nodejs.org/en).

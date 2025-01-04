@@ -15,6 +15,7 @@ export const useVlcStore = defineStore('vlcStore', {
             autoScheduleRestarts: true,
             restartInterval: 86400,
             pauseSkipTime: 10,
+            isPlaying: false,
         };
     },
     actions: {
@@ -29,6 +30,13 @@ export const useVlcStore = defineStore('vlcStore', {
             this.autoScheduleRestarts = autoScheduleRestarts;
             this.restartInterval = restartInterval;
             this.pauseSkipTime = pauseSkipTime;
+
+            backend.playlist.onNextMediaStarted(() => {
+                this.isPlaying = true;
+            });
+            backend.vlc.onExit(() => {
+                this.isPlaying = false;
+            });
         },
         setPath(path) {
             this.path = path;

@@ -1,11 +1,12 @@
 import { usePlaylistStore } from '../store/playlist.js';
+import { useVlcStore } from '../store/vlc.js';
 import emitter from '../lib/emitter.js';
 
 const template = `
 <v-main>
     <v-container>
         <template v-if="isBuildCompleted">
-            <div class="d-flex">
+            <div class="d-flex flex-wrap">
                 <v-btn variant="outlined" color="primary" prepend-icon="mdi-refresh" class="mr-2" @click="buildPlaylist()">
                     {{ $t('playlist.rebuildPlaylistAction') }}
                 </v-btn>
@@ -49,6 +50,9 @@ const template = `
                         </v-card-actions>
                     </v-card>
                 </v-menu>
+                <div v-if="isVlcPlaying" class="d-flex align-center justify-end flex-grow-1 text-success">
+                    <v-icon icon="mdi-play"></v-icon> Playlist is Active
+                </div>
             </div>
             <v-divider class="my-4" />
             <v-card :elevation="4">
@@ -96,6 +100,7 @@ const PlaylistComponent = {
     setup() {
         const { t } = useI18n();
         const playlistStore = usePlaylistStore();
+        const vlcStore = useVlcStore();
 
         const showLoading = ref(false);
         const loadingText = ref(t('app.loading'));
@@ -126,6 +131,7 @@ const PlaylistComponent = {
         ];
 
         const isBuildCompleted = computed(() => playlistStore.isBuildCompleted);
+        const isVlcPlaying = computed(() => vlcStore.isPlaying);
 
         watch(() => isBuildCompleted.value, () => {
             tablePage.value = 1;
@@ -177,10 +183,10 @@ const PlaylistComponent = {
 
         async function generateTableItemsFromPlaylist() {
             const remainingPlayTime = await playlistStore.queryRemainingPlayTime();
-            let startTimestamp = new Date().getTime() + (remainingPlayTime * 1000);
+            let startTimestamp = new Date().getTime() + (playlistItems?.[0]?.file ? (remainingPlayTime * 1000) : 0);
             tableItems.value = playlistItems.map(item => {
                 const newItem = {
-                    filename: item.file,
+                    filename: item.file ?? t('playlist.deadAir'),
                     startTime: new Date(startTimestamp).toLocaleTimeString(),
                 };
                 startTimestamp += (item.duration * 1000);
@@ -222,7 +228,7 @@ const PlaylistComponent = {
         return {
             isBuildCompleted, showLoading, loadingText,
             tablePage, tableHeaders, tablePageItems, tableItemsPerPage, totalTableItems, tableLoading,
-            isJumpMenuShown, jumpCount,
+            isJumpMenuShown, jumpCount, isVlcPlaying,
             loadTableItems, buildPlaylist, playNext, jumpForward,
         };
     }

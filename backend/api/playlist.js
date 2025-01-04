@@ -4,9 +4,9 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const ffprobe = require('ffprobe');
 const ffprobeStatic = require('ffprobe-static');
-const naturalCompare = require("natural-compare-lite");
-const { getAcceptedFileExtensions, getTvSeriesList, getPlaylistConfig } = require('./store');
-const { cronMatchesTimestamp } = require('./cronjob');
+const naturalCompare = require('natural-compare-lite');
+const { getAcceptedFileExtensions, getTvSeriesList, getPlaylistConfig, getRemainingPlayTime } = require('./store');
+const { cronMatchesTimestamp, getNextMatchingTime } = require('./cronjob');
 const { emitter } = require('./emitter');
 
 const MAX_SCAN_DEPTH = 64;
@@ -234,6 +234,7 @@ async function query(episodeCount) {
     }
 
     const queryState = {
+        timestamp: new Date().getTime() + Math.round(getRemainingPlayTime() / 1000),
         currentPlayingTvSeriesIndex,
         playlistLastPlayedIndexByTvSeries: playlistLastPlayedIteratorByTvSeries,
         playlistSubsequentPlayCountByTvSeries: playlistSubsequentPlayIteratorByTvSeries,
@@ -251,9 +252,44 @@ async function query(episodeCount) {
 /** Queries for the next media in the playlist based on the provided query state. (need to call build() before this) */
 async function queryNext(queryState) {
     let media = null;
-    const timestamp = new Date().getTime();
+    const timestamp = queryState.timestamp ?? new Date().getTime();
     let totalLoopCount = 0;
     const tvSeriesList = sortedTvSeriesList;
+
+    // Determine first if any TV series in the list can play, due to schedule restraints.
+    if (
+        queryState.currentPlayingTvSeriesIndex < 0 || queryState.currentPlayingTvSeriesIndex >= tvSeriesList.length
+    ) queryState.currentPlayingTvSeriesIndex = 0;
+    let nextTvSeriesTime = Infinity;
+    let nextTvSeriesIndex = null;
+    for (
+        const tvSeries of [
+            ...tvSeriesList.slice(queryState.currentPlayingTvSeriesIndex, tvSeriesList.length),
+            ...tvSeriesList.slice(0, queryState.currentPlayingTvSeriesIndex)
+        ]
+    ) {
+        const tvSeriesFileList = playlistByTvSeries.get(tvSeries.uuid) ?? [];
+        if (tvSeriesFileList.length === 0) continue;
+        if (cronMatchesTimestamp(tvSeries.cron, timestamp)) {
+            nextTvSeriesTime = Infinity;
+            nextTvSeriesIndex = null;
+            break;
+        }
+        let nextTime = getNextMatchingTime(tvSeries.cron, timestamp).getTime();
+        if (nextTime < nextTvSeriesTime) {
+            nextTvSeriesTime = nextTime;
+            nextTvSeriesIndex = tvSeriesList.indexOf(tvSeries);
+        }
+    }
+    if (nextTvSeriesIndex != null) {
+        queryState.timestamp = nextTvSeriesTime;
+        return {
+            file: null,
+            duration: Math.round((nextTvSeriesTime - timestamp) / 1000),
+            playTimeType: 'exactLength',
+        };
+    }
+
     while (totalLoopCount <= MAX_QUERY_LOOP_COUNT) {
         totalLoopCount++;
         if (
@@ -261,7 +297,7 @@ async function queryNext(queryState) {
         ) queryState.currentPlayingTvSeriesIndex = 0;
         const tvSeries = tvSeriesList[queryState.currentPlayingTvSeriesIndex];
         const tvSeriesFileList = playlistByTvSeries.get(tvSeries.uuid) ?? [];
-        if (tvSeriesFileList.length === 0 || !cronMatchesTimestamp(tvSeries.cron, timestamp)) {
+        if (tvSeriesFileList.length === 0 || !cronMatchesTimestamp(tvSeries.cron, queryState.timestamp)) {
             queryState.currentPlayingTvSeriesIndex++;
             continue;
         }
@@ -279,6 +315,7 @@ async function queryNext(queryState) {
             duration,
             playTimeType: tvSeries.playTimeType,
         };
+        queryState.timestamp = queryState.timestamp + (duration * 1000);
         let subsequentCount = (queryState.playlistSubsequentPlayCountByTvSeries.get(tvSeries.uuid) ?? 0) + 1;
         if (subsequentCount >= tvSeries.playCount) {
             subsequentCount = 0;
@@ -293,6 +330,7 @@ async function queryNext(queryState) {
 /** Advances the playlist and returns the next media to play. (need to call build() before this) */
 async function next() {
     const queryState = {
+        timestamp: new Date().getTime(),
         currentPlayingTvSeriesIndex,
         playlistLastPlayedIndexByTvSeries,
         playlistSubsequentPlayCountByTvSeries,
@@ -308,6 +346,7 @@ async function jump(count) {
     let media = null;
     for (let i = 0; i < count; i++) {
         const queryState = {
+            timestamp: new Date().getTime(),
             currentPlayingTvSeriesIndex,
             playlistLastPlayedIndexByTvSeries,
             playlistSubsequentPlayCountByTvSeries,

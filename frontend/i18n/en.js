@@ -52,6 +52,7 @@ const en = {
         playJumpCancel: 'Cancel',
         playJumpConfirm: 'Go',
         jumpCountLabel: 'Jump Forward Count',
+        deadAir: '[DEAD AIR]',
         tableHeader: {
             filename: 'Filename',
             startTime: 'Start Time',

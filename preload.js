@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('backend', {
         getAcceptedFileExtensions: () => ipcRenderer.invoke('backend/api/store/getAcceptedFileExtensions'),
     },
     vlc: {
+        onExit: (callback) => ipcRenderer.on('callbacks/vlc/exit', (_event, value) => callback(value)),
         exit: () => ipcRenderer.invoke('backend/api/vlc/exit'),
     },
 });
